@@ -27,8 +27,6 @@ different systems.
 * Install Glib2 library (Should be already installed on your linux distribution). See https://developer.gnome.org/glib/
 * Install poppler library (Should be already installed on your linux distribution). See http://poppler.freedesktop.org/
 * Install libxml2 (Should be already installed on your linux distribution). See http://xmlsoft.org/
-
-Use Makefile.linux64 for last version on Linux 64bits
-* Type 'make -f <MAKEFILENAME>'.  This should build the executable:
+* Type 'make'.  This should build the executable:
 
     bin/pdftoxml
