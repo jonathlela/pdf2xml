@@ -11,14 +11,15 @@
 //
 //===========================================================================
 
-#include <aconf.h>
-#include <stdio.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 #include "parseargs.h"
-#include "GString.h"
-#include "gmem.h"
+#include "goo/GooString.h"
+#include "glib/gmem.h"
 #include "GlobalParams.h"
 #include "Object.h"
 #include "Stream.h"
@@ -32,7 +33,7 @@
 #include "CharTypes.h"
 #include "UnicodeMap.h"
 #include "Error.h"
-#include "config.h"
+#include "poppler-config.h"
 #include "Parameters.h"
 #include "Outline.h"
 
@@ -50,7 +51,7 @@ using namespace ConstantsUtils;
 #include "ConstantsXML.h"
 using namespace ConstantsXML;
 
-void removeAlreadyExistingData(GString *dir);
+void removeAlreadyExistingData(GooString *dir);
 
 static const char cvsid[] = "$Revision$";
 
@@ -160,14 +161,14 @@ static ArgDesc argDesc[] = {
 int main(int argc, char *argv[]) {
   PDFDocXrce *doc;
 
-  GString *fileName;
-  GString *textFileName;
-  GString *dataDirName;
-  GString *shortFileName;
-  GString *annotationfile;
-  GString *ownerPW, *userPW;
-  GString *nsURI;
-  GString *cmd;
+  GooString *fileName;
+  GooString *textFileName;
+  GooString *dataDirName;
+  GooString *shortFileName;
+  GooString *annotationfile;
+  GooString *ownerPW, *userPW;
+  GooString *nsURI;
+  GooString *cmd;
   XmlOutputDev *xmlOut;
   GBool ok;
   char *p;
@@ -185,16 +186,16 @@ int main(int argc, char *argv[]) {
 	    fprintf(stderr, " version ");
 	    fprintf(stderr, PDFTOXML_VERSION);
 	    fprintf(stderr, "\n");
-	    fprintf(stderr, "(Based on Xpdf version %s, %s)\n", xpdfVersion, xpdfCopyright);
-	    fprintf(stderr, "%s\n", "Copyright 2004-2006 XRCE");
+	    fprintf(stderr, "%s\n", popplerCopyright);
+		fprintf(stderr, "%s\n", xpdfCopyright);
 	    if (!printVersion) {
 	      printUsage("pdftoxml", "<PDF-file> [<xml-file>]", argDesc);
 	    }
 	    goto err0;
 	  }
   }
-//  fileName = new GString(argv[1]);
-  cmd = new GString();
+//  fileName = new GooString(argv[1]);
+  cmd = new GooString();
   globalParams = new GlobalParams(cfgFileName);
 
   // Parameters specifics to pdftoxml
@@ -267,18 +268,18 @@ int main(int argc, char *argv[]) {
 
   // open PDF file
   if (ownerPassword[0] != '\001') {
-    ownerPW = new GString(ownerPassword);
+    ownerPW = new GooString(ownerPassword);
   } else {
     ownerPW = NULL;
   }
   if (userPassword[0] != '\001') {
-    userPW = new GString(userPassword);
+    userPW = new GooString(userPassword);
   } else {
     userPW = NULL;
   }
 
   if (namespaceUri[0] != '\001') {
-    nsURI = new GString(namespaceUri);
+    nsURI = new GooString(namespaceUri);
     cmd->append("-nsURI ")->append(nsURI)->append(" ");
   } else {
     nsURI = NULL;
@@ -291,7 +292,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (argc < 2) {goto err0;}
-  fileName = new GString(argv[1]);
+  fileName = new GooString(argv[1]);
   // Create the object PDF doc
   doc = new PDFDocXrce(fileName, ownerPW, userPW);
 
@@ -311,31 +312,31 @@ int main(int argc, char *argv[]) {
 
   // IF output XML file name was given in command line
   if (argc == 3) {
-    textFileName = new GString(argv[2]);
+    textFileName = new GooString(argv[2]);
     temp = textFileName->getCString() + textFileName->getLength() - 4;
      if (!strcmp(temp, EXTENSION_XML) || !strcmp(temp, EXTENSION_XML_MAJ)) {
-      	shortFileName = new GString(textFileName->getCString(), textFileName->getLength() - 4);
+      	shortFileName = new GooString(textFileName->getCString(), textFileName->getLength() - 4);
     }else {
-      	shortFileName = new GString(textFileName);
+      	shortFileName = new GooString(textFileName);
     }
   }
   // ELSE we build the output XML file name with the PDF file name
   else {
     p = fileName->getCString() + fileName->getLength() - 4;
     if (!strcmp(p, EXTENSION_PDF) || !strcmp(p, EXTENSION_PDF_MAJ)) {
-      	textFileName = new GString(fileName->getCString(), fileName->getLength() - 4);
-		shortFileName = new GString(textFileName);
+      	textFileName = new GooString(fileName->getCString(), fileName->getLength() - 4);
+		shortFileName = new GooString(textFileName);
 	
     } else {
       	textFileName = fileName->copy();
-      	shortFileName = new GString(textFileName);
+      	shortFileName = new GooString(textFileName);
     }
     textFileName->append(EXTENSION_XML);
   }
 
   // For the annotations XML file
   if (annots){
-  	annotationfile = new GString(shortFileName);
+  	annotationfile = new GooString(shortFileName);
   	annotationfile->append("_");
   	annotationfile->append(NAME_ANNOT);
   	annotationfile->append(EXTENSION_XML);
@@ -377,7 +378,7 @@ int main(int argc, char *argv[]) {
   if (xmlOut->isOk()) {
   	
   	// We clean the data directory if it is already exist
-  	dataDirName = new GString(textFileName);
+  	dataDirName = new GooString(textFileName);
   	dataDirName->append(NAME_DATA_DIR);
   	removeAlreadyExistingData(dataDirName);
   	
@@ -438,14 +439,14 @@ int main(int argc, char *argv[]) {
 
 /** Remove all files which are in data directory of file pdf if it is already exist
  * @param dir The directory name where we remove all data */
-void removeAlreadyExistingData(GString *dir) {
-	GString *file;
+void removeAlreadyExistingData(GooString *dir) {
+	GooString *file;
 	struct dirent *lecture;
 	DIR *rep;
 	rep = opendir(dir->getCString());
 	if (rep != NULL) {
 		while ((lecture = readdir(rep))){
-			file = new GString(dir);
+			file = new GooString(dir);
 			file->append("/");
 			file->append(lecture->d_name);
 			std::remove(file->getCString());

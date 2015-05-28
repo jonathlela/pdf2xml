@@ -12,19 +12,17 @@
 #ifndef XMLOUTPUTDEV_H
 #define XMLOUTPUTDEV_H
 
-#include <aconf.h>
-
 #ifdef USE_GCC_PRAGMAS
 #pragma interface
 #endif
 
 #include <stdio.h>
-#include "gtypes.h"
+#include "goo/gtypes.h"
 #include "GfxFont.h"
 #include "OutputDev.h"
 
 #include <stddef.h>
-#include "config.h"
+#include "poppler-config.h"
 #include "Object.h"
 #include "GlobalParams.h"
 #include "OutputDev.h"
@@ -57,8 +55,8 @@ class PDFRectangle;
 struct PSFont16Enc;
 class PSOutCustomColor;
 
-class GString;
-class GList;
+class GooString;
+class GooList;
 class GfxState;
 class UnicodeMap;
 
@@ -90,7 +88,7 @@ public:
 
 //#if TEXTOUT_WORD_LIST
   // Get the font name (which may be NULL).
-  GString *getFontName() { return fontName; }
+  GooString *getFontName() { return fontName; }
 
   // Get font descriptor flags.
   GBool isFixedWidth() { return flags & fontFixedWidth; }
@@ -104,7 +102,7 @@ private:
 
   GfxFont *gfxFont;
 //#if TEXTOUT_WORD_LIST
-  GString *fontName;
+  GooString *fontName;
   int flags;
 //#endif
 
@@ -133,7 +131,7 @@ private:
 //  GfxFont *gfxFont;
 //  
 //#if TEXTOUT_WORD_LIST
-//  GString *fontName;
+//  GooString *fontName;
 //#endif
 //
 //  friend class TextWord;
@@ -165,7 +163,7 @@ public:
    * @param idImage The id of current image
    * @param href The image href
    * @param idx The absolute object index in the stream */
-  ImageInline(double xPosition, double yPosition, double width, double height, int idWord, int idImage, GString *href, int index);
+  ImageInline(double xPosition, double yPosition, double width, double height, int idWord, int idImage, GooString *href, int index);
   
   /** Destructor 
    */
@@ -194,7 +192,7 @@ public:
   int getIdImageCurrent(){return idImageCurrent;}
   /** Get the href of this image
    *  @return The href of this image */
-  GString* getHrefImage(){return hrefImage;}
+  GooString* getHrefImage(){return hrefImage;}
   
   /** Modify the x position of the image
    *  @param xPosition The new x position image value */
@@ -216,7 +214,7 @@ public:
   void setIdImageCurrent(int id){idImageCurrent = id;}
   /** Modify the href of this image
    *  @param href The new href value of this image */
-  void setHrefImage(GString *href){hrefImage = href;}
+  void setHrefImage(GooString *href){hrefImage = href;}
   
 private:
 
@@ -235,7 +233,7 @@ private:
   /** The id current image */
   int idImageCurrent;
   /** The path current image */
-  GString* hrefImage;
+  GooString* hrefImage;
 
   friend class TextWord;
   friend class TextPage;
@@ -311,7 +309,7 @@ public:
 
   /** Get the font name of the current word
    *  @return The font name of the current word */
-  char *getFontName(){return fontName;}
+  GooString *getFontName(){return fontName;}
   
   /** Check if the current <code>TextWord</code> is <b>bold</b>
    *  @return <code>true</code> if the current <code>TextWord</code> is <b>bold</b>, <code>false</code> else */
@@ -332,10 +330,10 @@ public:
   void getColor(double *r, double *g, double *b)
     { *r = colorR; *g = colorG; *b = colorB; }
 
-  GString *convtoX(double xcol) const;
+  GooString *convtoX(double xcol) const;
   
   /** Convert the RGB color to string hexadecimal color value*/
-  GString *colortoString() const;
+  GooString *colortoString() const;
   
   /** Normalize the font name :<br></br>
    *  - remove the prefix (if it is present) which is the basefont of subsetted fonts.
@@ -352,7 +350,6 @@ public:
   int getLength() { return len; }
   Unicode getChar(int idx) { return text[idx]; }
 
-  GString *getFontName() { return font->fontName; }
   void getBBox(double *xMinA, double *yMinA, double *xMaxA, double *yMaxA)
     { *xMinA = xMin; *yMinA = yMin; *xMaxA = xMax; *yMaxA = yMax; }
   int getCharPos() { return charPos; }
@@ -431,7 +428,7 @@ private:
   /** The font information */
   TextFontInfo *font;
   /** The font name */
-  char* fontName;
+  GooString* fontName;
   /** The font size */
   double fontSize;
   
@@ -472,7 +469,7 @@ public:
    * @param base The directory name which contain all data with the prefix 'image' : <pdfFileName>.xml_data/image 
    * @param nsURIA The namespace specified 
    */
-  TextPage(GBool verboseA,Catalog *catalog, xmlNodePtr node, GString* dir, GString *base, GString *nsURIA);
+  TextPage(GBool verboseA,Catalog *catalog, xmlNodePtr node, GooString* dir, GooString *base, GooString *nsURIA);
 
   /** Destructor */
   ~TextPage();
@@ -485,7 +482,7 @@ public:
 
   /** End the current page
    * @param dataDir The name directory data */
-  void endPage(GString *dataDir);
+  void endPage(GooString *dataDir);
   
   /** Configuration for the <b>start</b> of a new page */
   void configuration();
@@ -564,7 +561,7 @@ public:
    * @param path The path description 
    * @param state The state description
    * @param gattributes All attributes for the <i>style</i> attribut*/
-  void doPath(GfxPath *path, GfxState *state, GString *gattributes);
+  void doPath(GfxPath *path, GfxState *state, GooString *gattributes);
   
   /** Add the GROUP tag whithin the CLIP current node 
    * @param path The path description 
@@ -608,7 +605,7 @@ public:
   			       int* /* maskColors */, GBool inlineImg, GBool mask,int imageIndex);
 
   // utility function to save raw data to a png file using the ong lib
-  bool save_png (GString* file_name,
+  bool save_png (GooString* file_name,
 				   unsigned int width, unsigned int height, unsigned int row_stride,
 				   unsigned char* data,
 				   unsigned char bpp = 24, unsigned char color_type = PNG_COLOR_TYPE_RGB,
@@ -674,49 +671,49 @@ private:
    * @param uMap The map
    * @param s The string which is building
    * @return The number of characters */
-  int dumpFragment(Unicode *text, int len, UnicodeMap *uMap, GString *s);
+  int dumpFragment(Unicode *text, int len, UnicodeMap *uMap, GooString *s);
 
   /** Build the attribute <i>id</i> for the <i>IMAGE</i> tag as <b>pNumberOfPage_iNumberOfImage</b> 
    * @param pageNum The numero of the current page
    * @param imageNum The IMAGE numero of the current page
    * @param id The variable which store the result to return
    * @return The id generated which is a string */  
-  GString* buildIdImage(int pageNum, int imageNum, GString *id);
+  GooString* buildIdImage(int pageNum, int imageNum, GooString *id);
   
   /** Build the attribute <i>id</i> for the <i>TEXT</i> tag as <b>pNumberOfPage_tNumberOfText</b> 
    * @param pageNum The numero of the current page
    * @param textNum The TEXT numero of the current page
    * @param id The variable which store the result to return
    * @return The id generated which is a string */
-  GString* buildIdText(int pageNum, int textNum, GString *id);
+  GooString* buildIdText(int pageNum, int textNum, GooString *id);
   
   /** Build the attribute <i>id</i> for the <i>TOKEN</i> tag as <b>pNumberOfPage_wNumberOfToken</b> 
    * @param pageNum The numero of the current page
    * @param tokenNum The TOKEN numero of the current page
    * @param id The variable which store the result to return
    * @return The id generated which is a string */
-  GString* buildIdToken(int pageNum, int tokenNum, GString *id);
+  GooString* buildIdToken(int pageNum, int tokenNum, GooString *id);
 
   /** Build the attribute <i>sid</i> for the object tags as <b>pNumberOfPage_sSID</b> 
    * @param pageNum The numero of the current page
    * @param sid The absolute object index in the current page
    * @param id The variable which store the result to return
    * @return The sid generated which is a string */
-  GString* buildSID(int pageNum, int sid, GString *id);
+  GooString* buildSID(int pageNum, int sid, GooString *id);
   
   /** Build the attribute <i>id</i> for the <i>BLOCK</i> tag as <b>pNumberOfPage_bNumberOfBlock</b> 
    * @param pageNum The numero of the current page
    * @param blockNum The BLOCK numero of the current page
    * @param id The variable which store the result to return
    * @return The id generated which is a string */
-  GString* buildIdBlock(int pageNum, int blockNum, GString *id);
+  GooString* buildIdBlock(int pageNum, int blockNum, GooString *id);
   
   /** Build the attribute <i>id</i> for the <i>CLIP</i> tag as <b>pNumberOfPage_cNumberOfClip</b> 
    * @param pageNum The numero of the current page
    * @param clipZoneNum The CLIP numero of the current page
    * @param id The variable which store the result to return
    * @return The id generated which is a string */
-  GString* buildIdClipZone(int pageNum, int clipZoneNum, GString *id);
+  GooString* buildIdClipZone(int pageNum, int clipZoneNum, GooString *id);
   
   /**
    * test if an annotation overlaps this zone
@@ -752,7 +749,7 @@ private:
   /** The id of current image inline*/
   int idImageInline;
   /** The namespace specified */
-  GString *namespaceURI;
+  GooString *namespaceURI;
 
   /** The root element */
   xmlNodePtr root;
@@ -771,11 +768,11 @@ private:
   xmlNodePtr vecroot;
     
   /** The directory name which contain all data */
-  GString *dataDirectory;
+  GooString *dataDirectory;
   /** The rel position for writting files */
-  GString *RelfileName;
+  GooString *RelfileName;
   /** For XML ref with xi:include */
-  GString *ImgfileName;
+  GooString *ImgfileName;
 
   /**   */
 
@@ -816,7 +813,7 @@ private:
   /** The last word on rawWords list */
   TextWord *rawLastWord;
   /** All fonts info objects used on this page <code>TextFontInfo</code> */
-  GList *fonts;
+  GooList *fonts;
   /** The <b>x</b> value coordinate of the last "find" result */
   double lastFindXMin;
   /** The <b>y</b> value coordinate of the last "find" result */
@@ -893,7 +890,7 @@ public:
    * @param nsURIA The namespace URI if it specified
    * @param cmdA The command line used to execute the tool 
    */
-  XmlOutputDev(GString *fileName, GString *fileNamePdf,Catalog *catalog, GBool physLayoutA, GBool verboseA, GString *nsURIA, GString *cmdA);
+  XmlOutputDev(GooString *fileName, GooString *fileNamePdf,Catalog *catalog, GBool physLayoutA, GBool verboseA, GooString *nsURIA, GooString *cmdA);
 
   /**
    *  Destructor
@@ -972,12 +969,12 @@ public:
   virtual void eoClip(GfxState *state) ;
   virtual void clipToStrokePath(GfxState *state);
 
-  GString *convtoX(unsigned int xcol) const;
+  GooString *convtoX(unsigned int xcol) const;
   
   /** Return the hexadecimal value of the color of string
    * @param rgb The color in RGB value 
    * @return The hexadecimal value color in a string value*/
-  GString *colortoString(GfxRGB rgb) const;
+  GooString *colortoString(GfxRGB rgb) const;
  
   
   /** Draw the image mask
@@ -1011,7 +1008,7 @@ public:
   
   /**Close and save the XML outline file which was created
    * @param shortFileName The XML outline short file name */
-  virtual void closeOutline(GString *shortFileName);
+  virtual void closeOutline(GooString *shortFileName);
   
   /** Dump the outline 
    * @param itemsA The items list
@@ -1019,15 +1016,15 @@ public:
    * @param uMapA The unicode map
    * @param levelA The hierarchic level of the current items list 
    * @param idItemTocParentA The id of the parent item of the current item */
-  GBool dumpOutline(xmlNodePtr parentNode,GList *itemsA, PDFDoc *docA, UnicodeMap *uMapA, int levelA, int idItemTocParentA);
-  int dumpFragment(Unicode *text, int len, UnicodeMap *uMap, GString *s);
+  GBool dumpOutline(xmlNodePtr parentNode,GooList *itemsA, PDFDoc *docA, UnicodeMap *uMapA, int levelA, int idItemTocParentA);
+  int dumpFragment(Unicode *text, int len, UnicodeMap *uMap, GooString *s);
   /** Generate an XML outline file : call the dumpOutline function
    * @param itemsA The items list
    * @param docA The PDF document object
    * @param levelA The hierarchic level of the current items list */
-  void generateOutline(GList *itemsA, PDFDoc *docA, int levelA);
+  void generateOutline(GooList *itemsA, PDFDoc *docA, int levelA);
 
-  GString* toUnicode(GString *s,UnicodeMap *uMap);
+  GooString* toUnicode(GooString *s,UnicodeMap *uMap);
 
 
   xmlNodePtr getDocRoot(){return docroot;}
@@ -1037,7 +1034,7 @@ private:
    * @param path The current path
    * @param state The state description
    * @param gattributes Style attributes to add to the current path */
-  void doPath(GfxPath *path, GfxState *state, GString* gattributes);
+  void doPath(GfxPath *path, GfxState *state, GooString* gattributes);
 
   double curstate[6];
   //double *curstate[1000];
@@ -1081,15 +1078,15 @@ private:
   GBool ok;
  	
   /** The PDF file name */
-  GString *fileNamePDF;
+  GooString *fileNamePDF;
 
   /** The directory name which contain all data */
-  GString *dataDir;
-  GString *baseFileName;
+  GooString *dataDir;
+  GooString *baseFileName;
   /** The buffer for output file names */
-  GString *myfilename;
+  GooString *myfilename;
   /** The namespace specified */
-  GString *nsURI;
+  GooString *nsURI;
   
   /** To set to dump native JPEG files */
   GBool dumpJPEG;
@@ -1097,7 +1094,7 @@ private:
   int imageIndex;
 
   /** list of pictures references*/
-  GList *lPictureReferences;
+  GooList *lPictureReferences;
 
 
   /** The item id for each toc items */

@@ -22,7 +22,7 @@
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 
-PDFDocXrce::PDFDocXrce(GString *fileNameA, GString *ownerPassword, GString *userPassword): PDFDoc(fileNameA, ownerPassword, userPassword) {
+PDFDocXrce::PDFDocXrce(GooString *fileNameA, GooString *ownerPassword, GooString *userPassword): PDFDoc(fileNameA, ownerPassword, userPassword) {
 }
 	 	
 void PDFDocXrce::displayPages(OutputDev *out, xmlNodePtr docrootA, int firstPage, int lastPage,

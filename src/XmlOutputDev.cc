@@ -15,7 +15,6 @@
 //
 //=================================================================================
 
-#include <aconf.h>
 #ifdef USE_GCC_PRAGMAS
 #pragma implementation
 #endif
@@ -58,9 +57,9 @@ using namespace ConstantsXML;
 #include <direct.h>  // for _mkdir
 #endif
 
-#include "gmem.h"
-#include "GList.h"
-#include "config.h"
+#include "glib/gmem.h"
+#include "goo/GooList.h"
+#include "poppler-config.h"
 #include "Error.h"
 #include "GlobalParams.h"
 #include "UnicodeMap.h"
@@ -132,8 +131,8 @@ using namespace ConstantsXML;
 TextFontInfo::TextFontInfo(GfxState *state) {
 	gfxFont = state->getFont();
 	//#if TEXTOUT_WORD_LIST
-	//fontName = (gfxFont && gfxFont->getOrigName()) ? gfxFont->getOrigName()->copy() : (GString *)NULL;
-	fontName = (gfxFont && gfxFont->getName()) ? gfxFont->getName()->copy() : (GString *)NULL;
+	//fontName = (gfxFont && gfxFont->getOrigName()) ? gfxFont->getOrigName()->copy() : (GooString *)NULL;
+	fontName = (gfxFont && gfxFont->getName()) ? gfxFont->getName()->copy() : (GooString *)NULL;
 	//#endif
 }
 
@@ -154,7 +153,7 @@ GBool TextFontInfo::matches(GfxState *state) {
 //------------------------------------------------------------------------
 
 ImageInline::ImageInline(double xPosition, double yPosition, double width,
-		double height, int idWord, int idImage, GString* href, int index) {
+		double height, int idWord, int idImage, GooString* href, int index) {
 	xPositionImage = xPosition;
 	yPositionImage = yPosition;
 	widthImage = width;
@@ -206,7 +205,6 @@ TextWord::TextWord(GfxState *state, int rotA, int angleDegre,
 			//choice of letters is arbitrary, but different subsets in the same PDF file must have
 			//different tags. For example, EOODIA+Poetica is the name of a subset of Poetica�, a
 			//Type 1 font. (See implementation note 62 in Appendix H.)
-			fontName = strdup(state->getFont()->getName()->getCString());
 			if (strstr(state->getFont()->getName()->lowerCase()->getCString(), "bold"))
 				bold=gTrue;
 			if (strstr(state->getFont()->getName()->lowerCase()->getCString(), "italic")|| strstr(state->getFont()->getName()->lowerCase()->getCString(), "oblique"))
@@ -455,8 +453,8 @@ int TextWord::cmpYX(const void *p1, const void *p2) {
 	return cmp< 0 ? -1 : cmp> 0 ?1 : 0;
 }
 
-GString *TextWord::convtoX(double xcol) const {
-	GString *xret=new GString();
+GooString *TextWord::convtoX(double xcol) const {
+	GooString *xret=new GooString();
 	char tmp;
 	unsigned int k;
 	k = static_cast<int>(xcol);
@@ -477,11 +475,11 @@ GString *TextWord::convtoX(double xcol) const {
 	return xret;
 }
 
-GString *TextWord::colortoString() const {
-	GString *tmp=new GString("#");
-	GString *tmpr=convtoX(static_cast<int>(255*colorR));
-	GString *tmpg=convtoX(static_cast<int>(255*colorG));
-	GString *tmpb=convtoX(static_cast<int>(255*colorB));
+GooString *TextWord::colortoString() const {
+	GooString *tmp=new GooString("#");
+	GooString *tmpr=convtoX(static_cast<int>(255*colorR));
+	GooString *tmpg=convtoX(static_cast<int>(255*colorG));
+	GooString *tmpb=convtoX(static_cast<int>(255*colorB));
 	tmp->append(tmpr);
 	tmp->append(tmpg);
 	tmp->append(tmpb);
@@ -524,7 +522,7 @@ const char* TextWord::normalizeFontName(char* fontName) {
 //------------------------------------------------------------------------
 
 TextPage::TextPage(GBool verboseA, Catalog *catalog, xmlNodePtr node,
-		GString* dir, GString *base, GString *nsURIA) {
+		GooString* dir, GooString *base, GooString *nsURIA) {
 
 	root = node;
 	verbose = verboseA;
@@ -546,20 +544,20 @@ TextPage::TextPage(GBool verboseA, Catalog *catalog, xmlNodePtr node,
 	idx = 0; //EG
 
 	if (nsURIA) {
-		namespaceURI = new GString(nsURIA);
+		namespaceURI = new GooString(nsURIA);
 	} else {
 		namespaceURI = NULL;
 	}
 
 	rawWords = NULL;
 	rawLastWord = NULL;
-	fonts = new GList();
+	fonts = new GooList();
 	lastFindXMin = lastFindYMin = 0;
 	haveLastFind = gFalse;
 
 	if (parameters->getDisplayImage()) {
-		RelfileName = new GString(dir);
-		ImgfileName = new GString(base);
+		RelfileName = new GooString(dir);
+		ImgfileName = new GooString(base);
 	}
 }
 
@@ -606,8 +604,8 @@ void TextPage::startPage(int pageNum, GfxState *state, GBool cut) {
 	xmlNewProp(page, (const xmlChar*)ATTR_HEIGHT, (const xmlChar*)tmp);
 	sprintf(tmp, "%d", pageNum);
 	xmlNewProp(page, (const xmlChar*)ATTR_NUMBER, (const xmlChar*)tmp);
-	GString *id;
-	id = new GString("p");
+	GooString *id;
+	id = new GooString("p");
 	id->append(tmp);
 	xmlNewProp(page, (const xmlChar*)ATTR_ID, (const xmlChar*)id->getCString());
 	delete id;
@@ -731,8 +729,8 @@ void TextPage::startPage(int pageNum, GfxState *state, GBool cut) {
 //  	printf("start annotations\n");
 	currentPage = myCat->getPage(num);
 	currentPage->getAnnots(&objAnnot);
-	//pageLinks = currentPage->getLinks(myCat);
-	pageLinks = currentPage->getLinks();
+	pageLinks = currentPage->getLinks(myCat);
+	//pageLinks = currentPage->getLinks();
 
 	// Annotation's objects list
 	if (objAnnot.isArray()){
@@ -773,7 +771,7 @@ void TextPage::configuration() {
 
 
 
-void TextPage::endPage(GString *dataDir) {
+void TextPage::endPage(GooString *dataDir) {
 	if (curWord) {
 		endWord();
 	}
@@ -783,14 +781,14 @@ void TextPage::endPage(GString *dataDir) {
 		xmlNodePtr xiinclude=NULL;
 		xmlNsPtr xiNs = NULL;
 
-		GString *relname = new GString(RelfileName);
+		GooString *relname = new GooString(RelfileName);
 		relname->append("-");
-		relname->append(GString::fromInt(num));
+		relname->append(GooString::fromInt(num));
 		relname->append(EXTENSION_VEC);
 
-		GString *refname = new GString(ImgfileName);
+		GooString *refname = new GooString(ImgfileName);
 		refname->append("-");
-		refname->append(GString::fromInt(num));
+		refname->append(GooString::fromInt(num));
 		refname->append(EXTENSION_VEC);
 
 		xiNs=xmlNewNs(NULL, (const xmlChar*)XI_URI, (const xmlChar*)XI_PREFIX);
@@ -801,12 +799,12 @@ void TextPage::endPage(GString *dataDir) {
 			xmlSetNs(xiinclude, xiNs);
 			if (cutter) {
 				// Change the relative path of vectorials images when all pages are cutted
-				GString *imageName = new GString("image");
+				GooString *imageName = new GooString("image");
 				imageName->append("-");
-				imageName->append(GString::fromInt(num));
+				imageName->append(GooString::fromInt(num));
 				imageName->append(EXTENSION_VEC);
 				// ID: 1850760
-				GString *cp;
+				GooString *cp;
 				cp = refname->copy();
 				for (int i=0;i<cp->getLength();i++){
 					if (cp->getChar(i) ==' '){
@@ -821,7 +819,7 @@ void TextPage::endPage(GString *dataDir) {
 				delete cp;
 			} else {
 				// ID: 1850760
-				GString *cp;
+				GooString *cp;
 				cp = refname->copy();
 				for (int i=0;i<cp->getLength();i++){
 					if (cp->getChar(i) ==' '){
@@ -857,10 +855,10 @@ void TextPage::endPage(GString *dataDir) {
 	// IF cutter is ok we build the file name for all pages separately  
 	// and save all files in the data directory
 	if (cutter) {
-		dataDirectory = new GString(dataDir);
-		GString *pageFile = new GString(dataDirectory);
+		dataDirectory = new GooString(dataDir);
+		GooString *pageFile = new GooString(dataDirectory);
 		pageFile->append("/pageNum-");
-		pageFile->append(GString::fromInt(num));
+		pageFile->append(GooString::fromInt(num));
 		pageFile->append(EXTENSION_XML);
 
 		if (!xmlSaveFile(pageFile->getCString(), docPage)) {
@@ -905,7 +903,7 @@ void TextPage::clear() {
 			delete word;
 		}
 	}
-	deleteGList(fonts, TextFontInfo);
+	deleteGooList(fonts, TextFontInfo);
 
 	curWord = NULL;
 	charPos = 0;
@@ -916,7 +914,7 @@ void TextPage::clear() {
 
 	rawWords = NULL;
 	rawLastWord = NULL;
-	fonts = new GList();
+	fonts = new GooList();
 
 	// Clear the vector which contain images inline objects
 	int nb = listeImageInline.size();
@@ -1404,7 +1402,7 @@ void TextPage::testLinkedText(xmlNodePtr node,double xMin,double yMin,double xMa
 	 * if uri:  ad @href= value
 	 * if goto:  add @hlink = ...??what !! = page and position values
 	 */
-	GString idvalue = new GString("X");
+	GooString idvalue = new GooString("X");
 	Link *link;
 	LinkAction* action;
 
@@ -1437,7 +1435,7 @@ void TextPage::testLinkedText(xmlNodePtr node,double xMin,double yMin,double xMa
 							LinkURI* uri = (LinkURI*)action;
 							if (uri->isOk())
 							{
-								GString* dest = uri->getURI();
+								GooString* dest = uri->getURI();
 								if (dest != NULL)
 								{
 									xmlNewProp(node, (const xmlChar*)ATTR_URILINK,(const xmlChar*)dest->getCString());
@@ -1452,7 +1450,7 @@ void TextPage::testLinkedText(xmlNodePtr node,double xMin,double yMin,double xMa
 							{
 								bool newlink = false;
 								LinkDest* link_dest = goto_link->getDest();
-								GString*  name_dest = goto_link->getNamedDest();
+								GooString*  name_dest = goto_link->getNamedDest();
 								if (name_dest != NULL && myCat != NULL)
 								{
 									link_dest = myCat->findDest(name_dest);
@@ -1578,9 +1576,9 @@ void TextPage::dump(GBool blocks, GBool fullFontName) {
 	UnicodeMap *uMap;
 
 	TextWord *word;
-	GString *stringTemp;
+	GooString *stringTemp;
 
-	GString *id;
+	GooString *id;
 	char* tmp;
 
 	tmp=(char*)malloc(10*sizeof(char));
@@ -1641,7 +1639,7 @@ void TextPage::dump(GBool blocks, GBool fullFontName) {
 		nodeblocks->type = XML_ELEMENT_NODE;
 
 		xmlAddChild(page, nodeblocks);
-		id = new GString("p");
+		id = new GooString("p");
 		xmlNewProp(nodeblocks, (const xmlChar*)ATTR_ID,
 				(const xmlChar*)buildIdBlock(num, numBlock, id)->getCString());
 		delete id;
@@ -1683,16 +1681,16 @@ void TextPage::dump(GBool blocks, GBool fullFontName) {
 
 		node->type = XML_ELEMENT_NODE;
 
-		id = new GString("p");
+		id = new GooString("p");
 		xmlNewProp(node, (const xmlChar*)ATTR_SID, (const xmlChar*)buildSID(num, word->getIdx(), id)->getCString());
 		delete id;
 
-		id = new GString("p");
+		id = new GooString("p");
 		xmlNewProp(node, (const xmlChar*)ATTR_ID, (const xmlChar*)buildIdToken(num, numToken, id)->getCString());
 		delete id;
 		numToken = numToken + 1;
 
-		stringTemp = new GString();
+		stringTemp = new GooString();
 		testLinkedText(node,word->xMin,word->yMin,word->xMax,word->yMax);
 		if (testAnnotatedText(word->xMin,word->yMin,word->xMax,word->yMax)){
 			xmlNewProp(node, (const xmlChar*)ATTR_HIGHLIGHT,(const xmlChar*)"yes");
@@ -1718,7 +1716,7 @@ void TextPage::dump(GBool blocks, GBool fullFontName) {
 				xcFontName = (xmlChar*)word->getFontName();
 			} else {
 				xcFontName
-						= (xmlChar*)word->normalizeFontName(word->getFontName());
+					= (xmlChar*)word->normalizeFontName(word->getFontName()->getCString());
 				//xmlNewProp(
 				//		node,
 				//			(const xmlChar*)ATTR_FONT_NAME,
@@ -1734,7 +1732,7 @@ void TextPage::dump(GBool blocks, GBool fullFontName) {
 				uncdFontName[i] = (Unicode) xcFontName[i];
 			}
 			uncdFontName[size] = (Unicode)0;
-			GString* gsFontName = new GString();
+			GooString* gsFontName = new GooString();
 			dumpFragment(uncdFontName, size, uMap, gsFontName);
 			xmlNewProp(node, (const xmlChar*)ATTR_FONT_NAME,
 					(const xmlChar*)gsFontName->getCString());
@@ -1829,12 +1827,12 @@ void TextPage::dump(GBool blocks, GBool fullFontName) {
 						nodeImageInline = xmlNewNode(NULL,
 								(const xmlChar*)TAG_TOKEN);
 						nodeImageInline->type = XML_ELEMENT_NODE;
-						id = new GString("p");
+						id = new GooString("p");
 						xmlNewProp(nodeImageInline, (const xmlChar*)ATTR_ID,
 								(const xmlChar*)buildIdToken(num, numToken, id)->getCString());
 						delete id;
 						numToken = numToken + 1;
-						id = new GString("p");
+						id = new GooString("p");
 						xmlNewProp(
 								nodeImageInline,
 								(const xmlChar*)ATTR_SID,
@@ -1960,7 +1958,7 @@ void TextPage::dump(GBool blocks, GBool fullFontName) {
 						(const xmlChar*)tmp);
 
 				// Add the ID attribute for the TEXT tag
-				id = new GString("p");
+				id = new GooString("p");
 				xmlNewProp(nodeline, (const xmlChar*)ATTR_ID,
 						(const xmlChar*)buildIdText(num, numText, id)->getCString());
 				delete id;
@@ -2045,7 +2043,7 @@ void TextPage::dump(GBool blocks, GBool fullFontName) {
 			}
 
 			// Add the ID attribute for the TEXT tag
-			id = new GString("p");
+			id = new GooString("p");
 			xmlNewProp(nodeline, (const xmlChar*)ATTR_ID,
 					(const xmlChar*)buildIdText(num, numText, id)->getCString());
 			delete id;
@@ -2101,7 +2099,7 @@ void TextPage::dump(GBool blocks, GBool fullFontName) {
 					nodeblocks = xmlNewNode(NULL, (const xmlChar*)TAG_BLOCK);
 					nodeblocks->type = XML_ELEMENT_NODE;
 					xmlAddChild(page, nodeblocks);
-					id = new GString("p");
+					id = new GooString("p");
 					xmlNewProp(nodeblocks, (const xmlChar*)ATTR_ID,
 							(const xmlChar*)buildIdBlock(num, numBlock, id)->getCString());
 					delete id;
@@ -2121,7 +2119,7 @@ void TextPage::dump(GBool blocks, GBool fullFontName) {
 								= xmlNewNode(NULL, (const xmlChar*)TAG_BLOCK);
 						nodeblocks->type = XML_ELEMENT_NODE;
 						xmlAddChild(page, nodeblocks);
-						id = new GString("p");
+						id = new GooString("p");
 						xmlNewProp(nodeblocks, (const xmlChar*)ATTR_ID,
 								(const xmlChar*)buildIdBlock(num, numBlock, id)->getCString());
 						delete id;
@@ -2167,13 +2165,13 @@ void TextPage::addImageInlineNode(xmlNodePtr nodeline,
 					&& listeImageInline[i]->getYPositionImage()<= word->yMax) {
 				nodeImageInline = xmlNewNode(NULL, (const xmlChar*)TAG_TOKEN);
 				nodeImageInline->type = XML_ELEMENT_NODE;
-				GString *id;
-				id = new GString("p");
+				GooString *id;
+				id = new GooString("p");
 				xmlNewProp(nodeImageInline, (const xmlChar*)ATTR_ID,
 						(const xmlChar*)buildIdToken(num, numToken, id)->getCString());
 				delete id;
 				numToken = numToken + 1;
-				id = new GString("p");
+				id = new GooString("p");
 				xmlNewProp(nodeImageInline, (const xmlChar*)ATTR_SID,
 						(const xmlChar*)buildSID(num, listeImageInline[i]->getIdx(), id)->getCString());
 				delete id;
@@ -2209,14 +2207,14 @@ void TextPage::addImageInlineNode(xmlNodePtr nodeline,
 							nodeImageInline = xmlNewNode(NULL,
 									(const xmlChar*)TAG_TOKEN);
 							nodeImageInline->type = XML_ELEMENT_NODE;
-							GString *id;
-							id = new GString("p");
+							GooString *id;
+							id = new GooString("p");
 							xmlNewProp(nodeImageInline,
 									(const xmlChar*)ATTR_ID,
 									(const xmlChar*)buildIdToken(num, numToken, id)->getCString());
 							delete id;
 							numToken = numToken + 1;
-							id = new GString("p");
+							id = new GooString("p");
 							xmlNewProp(nodeImageInline,
 									(const xmlChar*)ATTR_SID,
 									(const xmlChar*)buildSID(num, listeImageInline[j]->getIdx(), id)->getCString());
@@ -2261,7 +2259,7 @@ void TextPage::addImageInlineNode(xmlNodePtr nodeline,
 	}
 }
 
-GString* TextPage::buildIdImage(int pageNum, int imageNum, GString *id) {
+GooString* TextPage::buildIdImage(int pageNum, int imageNum, GooString *id) {
 	char* tmp=(char*)malloc(10*sizeof(char));
 	sprintf(tmp, "%d", pageNum);
 	id->append(tmp);
@@ -2272,7 +2270,7 @@ GString* TextPage::buildIdImage(int pageNum, int imageNum, GString *id) {
 	return id;
 }
 
-GString* TextPage::buildSID(int pageNum, int sid, GString *id) {
+GooString* TextPage::buildSID(int pageNum, int sid, GooString *id) {
 	char* tmp=(char*)malloc(10*sizeof(char));
 	sprintf(tmp, "%d", pageNum);
 	id->append(tmp);
@@ -2282,7 +2280,7 @@ GString* TextPage::buildSID(int pageNum, int sid, GString *id) {
 	free(tmp);
 	return id;
 }
-GString* TextPage::buildIdText(int pageNum, int textNum, GString *id) {
+GooString* TextPage::buildIdText(int pageNum, int textNum, GooString *id) {
 	char* tmp=(char*)malloc(10*sizeof(char));
 	sprintf(tmp, "%d", pageNum);
 	id->append(tmp);
@@ -2293,7 +2291,7 @@ GString* TextPage::buildIdText(int pageNum, int textNum, GString *id) {
 	return id;
 }
 
-GString* TextPage::buildIdToken(int pageNum, int tokenNum, GString *id) {
+GooString* TextPage::buildIdToken(int pageNum, int tokenNum, GooString *id) {
 	char* tmp=(char*)malloc(10*sizeof(char));
 	sprintf(tmp, "%d", pageNum);
 	id->append(tmp);
@@ -2304,7 +2302,7 @@ GString* TextPage::buildIdToken(int pageNum, int tokenNum, GString *id) {
 	return id;
 }
 
-GString* TextPage::buildIdBlock(int pageNum, int blockNum, GString *id) {
+GooString* TextPage::buildIdBlock(int pageNum, int blockNum, GooString *id) {
 	char* tmp=(char*)malloc(10*sizeof(char));
 	sprintf(tmp, "%d", pageNum);
 	id->append(tmp);
@@ -2315,7 +2313,7 @@ GString* TextPage::buildIdBlock(int pageNum, int blockNum, GString *id) {
 	return id;
 }
 
-GString* TextPage::buildIdClipZone(int pageNum, int clipZoneNum, GString *id) {
+GooString* TextPage::buildIdClipZone(int pageNum, int clipZoneNum, GooString *id) {
 	char* tmp=(char*)malloc(10*sizeof(char));
 	sprintf(tmp, "%d", pageNum);
 	id->append(tmp);
@@ -2326,7 +2324,7 @@ GString* TextPage::buildIdClipZone(int pageNum, int clipZoneNum, GString *id) {
 	return id;
 }
 
-int TextPage::dumpFragment(Unicode *text, int len, UnicodeMap *uMap, GString *s) {
+int TextPage::dumpFragment(Unicode *text, int len, UnicodeMap *uMap, GooString *s) {
 	char lre[8], rle[8], popdf[8], buf[8];
 	int lreLen, rleLen, popdfLen, n;
 	int nCols, i, j, k;
@@ -2437,8 +2435,8 @@ void TextPage::doPathForClip(GfxPath *path, GfxState *state,
 	groupNode = xmlNewNode(NULL, (const xmlChar*)TAG_GROUP);
 	xmlAddChild(currentNode, groupNode);
 
-	GString *id;
-	id = new GString("p");
+	GooString *id;
+	id = new GooString("p");
 	xmlNewProp(groupNode, (const xmlChar*)ATTR_SID, (const xmlChar*)buildSID(num, getIdx(), id)->getCString());
 	delete id;
 
@@ -2446,7 +2444,7 @@ void TextPage::doPathForClip(GfxPath *path, GfxState *state,
 	free(tmp);
 }
 
-void TextPage::doPath(GfxPath *path, GfxState *state, GString* gattributes) {
+void TextPage::doPath(GfxPath *path, GfxState *state, GooString* gattributes) {
 
 	// Increment the absolute object index
 	idx++;
@@ -2459,15 +2457,15 @@ void TextPage::doPath(GfxPath *path, GfxState *state, GString* gattributes) {
 	groupNode = xmlNewNode(NULL, (const xmlChar*)TAG_GROUP);
 	xmlAddChild(vecroot, groupNode);
 
-	GString *id;
-	id = new GString("p");
+	GooString *id;
+	id = new GooString("p");
 	xmlNewProp(groupNode, (const xmlChar*)ATTR_SID, (const xmlChar*)buildSID(num, getIdx(), id)->getCString());
 	delete id;
 
 	xmlNewProp(groupNode, (const xmlChar*)ATTR_STYLE,
 			(const xmlChar*)gattributes->getCString());
 
-	id = new GString("p");
+	id = new GooString("p");
 	xmlNewProp(groupNode, (const xmlChar*)ATTR_CLIPZONE,
 			(const xmlChar*)buildIdClipZone(num, idCur, id)->getCString());
 	delete id;
@@ -2597,8 +2595,8 @@ void TextPage::clip(GfxState *state) {
 	gnode = xmlNewNode(NULL, (const xmlChar*)TAG_CLIP);
 	xmlAddChild(vecroot, gnode);
 
-	GString *id;
-	id = new GString("p");
+	GooString *id;
+	id = new GooString("p");
 	xmlNewProp(gnode, (const xmlChar*)ATTR_SID, (const xmlChar*)buildSID(num, getIdx(), id)->getCString());
 	delete id;
 
@@ -2613,7 +2611,7 @@ void TextPage::clip(GfxState *state) {
 	sprintf(tmp, "%g", yMax-yMin);
 	xmlNewProp(gnode, (const xmlChar*)ATTR_HEIGHT, (const xmlChar*)tmp);
 
-	id = new GString("p");
+	id = new GooString("p");
 	xmlNewProp(gnode, (const xmlChar*)ATTR_IDCLIPZONE,
 			(const xmlChar*)buildIdClipZone(num, idClip, id)->getCString());
 	delete id;
@@ -2640,8 +2638,8 @@ void TextPage::eoClip(GfxState *state) {
 	gnode=xmlNewNode(NULL, (const xmlChar*)TAG_CLIP);
 	xmlAddChild(vecroot, gnode);
 
-	GString *id;
-	id = new GString("p");
+	GooString *id;
+	id = new GooString("p");
 	xmlNewProp(gnode, (const xmlChar*)ATTR_SID, (const xmlChar*)buildSID(num, getIdx(), id)->getCString());
 	delete id;
 
@@ -2656,7 +2654,7 @@ void TextPage::eoClip(GfxState *state) {
 	sprintf(tmp, "%g", yMax-yMin);
 	xmlNewProp(gnode, (const xmlChar*)ATTR_HEIGHT, (const xmlChar*)tmp);
 
-	id = new GString("p");
+	id = new GooString("p");
 	xmlNewProp(gnode, (const xmlChar*)ATTR_IDCLIPZONE,
 			(const xmlChar*)buildIdClipZone(num, idClip, id)->getCString());
 	delete id;
@@ -2685,8 +2683,8 @@ void TextPage::clipToStrokePath(GfxState *state) {
 	gnode=xmlNewNode(NULL, (const xmlChar*)TAG_CLIP);
 	xmlAddChild(vecroot, gnode);
 
-	GString *id;
-	id = new GString("p");
+	GooString *id;
+	id = new GooString("p");
 	xmlNewProp(gnode, (const xmlChar*)ATTR_SID, (const xmlChar*)buildSID(num, getIdx(), id)->getCString());
 	delete id;
 
@@ -2701,7 +2699,7 @@ void TextPage::clipToStrokePath(GfxState *state) {
 	sprintf(tmp, "%g", yMax-yMin);
 	xmlNewProp(gnode, (const xmlChar*)ATTR_HEIGHT, (const xmlChar*)tmp);
 
-	id = new GString("p");
+	id = new GooString("p");
 	xmlNewProp(gnode, (const xmlChar*)ATTR_IDCLIPZONE,
 			(const xmlChar*)buildIdClipZone(num, idClip, id)->getCString());
 	delete id;
@@ -2724,7 +2722,7 @@ void TextPage::drawImageMask(GfxState *state, Object *ref, Stream *str,
 	FILE *f;
 	int c;
 	int size;
-	GString *id;
+	GooString *id;
 	
 	double x0, y0; // top left corner of image
 	double w0, h0, w1, h1; // size of image
@@ -2771,12 +2769,12 @@ void TextPage::drawImageMask(GfxState *state, Object *ref, Stream *str,
 	
 
 	// HREF
-	GString *relname = new GString(RelfileName);
+	GooString *relname = new GooString(RelfileName);
 	relname->append("-");
-	relname->append(GString::fromInt(imageIndex));
-	GString *refname = new GString(ImgfileName);
+	relname->append(GooString::fromInt(imageIndex));
+	GooString *refname = new GooString(ImgfileName);
 	refname->append("-");
-	refname->append(GString::fromInt(imageIndex));
+	refname->append(GooString::fromInt(imageIndex));
 	if(dumpJPEG && str->getKind() == strDCT && !inlineImg) {
 		relname->append(".jpg");
 		refname->append(".jpg");
@@ -2817,13 +2815,13 @@ void TextPage::drawImageMask(GfxState *state, Object *ref, Stream *str,
 
 	if (!inlineImg || (inlineImg && parameters->getImageInline())) {
 		node = xmlNewNode(NULL, (const xmlChar*)TAG_IMAGE);
-		GString *id;
-		id = new GString("p");
+		GooString *id;
+		id = new GooString("p");
 		xmlNewProp(node, (const xmlChar*)ATTR_ID, (const xmlChar*)buildIdImage(num, numImage, id)->getCString());
 		delete id;
 		numImage = numImage + 1;
 
-		id = new GString("p");
+		id = new GooString("p");
 		xmlNewProp(node, (const xmlChar*)ATTR_SID, (const xmlChar*)buildSID(num, getIdx(), id)->getCString());
 		delete id;
 
@@ -2849,7 +2847,7 @@ void TextPage::drawImageMask(GfxState *state, Object *ref, Stream *str,
 		listeImageInline.push_back(new ImageInline(x0, y0, w0, h0, getIdWORD(), imageIndex, refname, getIdx()));
 	}
 
-	id = new GString("p");
+	id = new GooString("p");
 	xmlNewProp(node, (const xmlChar*)ATTR_CLIPZONE,
 			(const xmlChar*)buildIdClipZone(num, idCur, id)->getCString());
 	delete id;
@@ -2876,7 +2874,7 @@ void TextPage::drawImage(GfxState *state, Object *ref, Stream *str, int width,
 	double xt, yt, wt, ht;
 	GBool rotate, xFlip, yFlip;
 	int x, y;
-	GString *id;
+	GooString *id;
 	
 	xmlNodePtr node = NULL;
 
@@ -2916,13 +2914,13 @@ void TextPage::drawImage(GfxState *state, Object *ref, Stream *str, int width,
 		yFlip = ht > 0;
 	}
 
-	GString *relname = new GString(RelfileName);
+	GooString *relname = new GooString(RelfileName);
 	relname->append("-");
-	relname->append(GString::fromInt(imageIndex));
+	relname->append(GooString::fromInt(imageIndex));
 
-	GString *refname = new GString(ImgfileName);
+	GooString *refname = new GooString(ImgfileName);
 	refname->append("-");
-	refname->append(GString::fromInt(imageIndex));
+	refname->append(GooString::fromInt(imageIndex));
 
 	// HREF
 	if (dumpJPEG && str->getKind() == strDCT && colorMap->getNumPixelComps()
@@ -3001,13 +2999,13 @@ void TextPage::drawImage(GfxState *state, Object *ref, Stream *str, int width,
 
 	if (!inlineImg || (inlineImg && parameters->getImageInline())) {
 		node = xmlNewNode(NULL, (const xmlChar*)TAG_IMAGE);
-		GString *id;
-		id = new GString("p");
+		GooString *id;
+		id = new GooString("p");
 		xmlNewProp(node, (const xmlChar*)ATTR_ID, (const xmlChar*)buildIdImage(num, numImage, id)->getCString());
 		delete id;
 		numImage = numImage + 1;
 
-		id = new GString("p");
+		id = new GooString("p");
 		xmlNewProp(node, (const xmlChar*)ATTR_SID, (const xmlChar*)buildSID(num, getIdx(), id)->getCString());
 		delete id;
 
@@ -3037,7 +3035,7 @@ void TextPage::drawImage(GfxState *state, Object *ref, Stream *str, int width,
 		listeImageInline.push_back(new ImageInline(x0, y0, w0, h0, getIdWORD(), imageIndex, refname, getIdx()));
 	}
 	
-	id = new GString("p");
+	id = new GooString("p");
 	xmlNewProp(node, (const xmlChar*)ATTR_CLIPZONE,
 			(const xmlChar*)buildIdClipZone(num, idCur, id)->getCString());
 	delete id;
@@ -3050,14 +3048,14 @@ const char* TextPage::drawImageOrMask(GfxState *state, Object* ref, Stream *str,
 			       GfxImageColorMap *colorMap,
 			       int* /* maskColors */, GBool inlineImg, GBool mask, int imageIndex)
 {
-	GString pic_file;
+	GooString pic_file;
 
 	double x0, y0; // top left corner of image
 	double w0, h0, w1, h1; // size of image
 	double xt, yt, wt, ht;
 
 	GBool rotate, xFlip, yFlip;
-	GString *id;
+	GooString *id;
 
 	xmlNodePtr node = NULL;
 	const char* extension = NULL;
@@ -3115,13 +3113,13 @@ const char* TextPage::drawImageOrMask(GfxState *state, Object* ref, Stream *str,
 		y1 = y2;
 		y2 = temp;
 	}
-	GString *relname = new GString(RelfileName);
+	GooString *relname = new GooString(RelfileName);
 	relname->append("-");
-	relname->append(GString::fromInt(imageIndex));
+	relname->append(GooString::fromInt(imageIndex));
 
-	GString *refname = new GString(ImgfileName);
+	GooString *refname = new GooString(ImgfileName);
 	refname->append("-");
-	refname->append(GString::fromInt(imageIndex));
+	refname->append(GooString::fromInt(imageIndex));
 
 //	if (pic_file.getLength() == 0)
 	if (1)
@@ -3364,13 +3362,13 @@ const char* TextPage::drawImageOrMask(GfxState *state, Object* ref, Stream *str,
 	}
 	if (!inlineImg || (inlineImg && parameters->getImageInline())) {
 			node = xmlNewNode(NULL, (const xmlChar*)TAG_IMAGE);
-			GString *id;
-			id = new GString("p");
+			GooString *id;
+			id = new GooString("p");
 			xmlNewProp(node, (const xmlChar*)ATTR_ID, (const xmlChar*)buildIdImage(num, numImage, id)->getCString());
 			delete id;
 			numImage = numImage + 1;
 
-			id = new GString("p");
+			id = new GooString("p");
 			xmlNewProp(node, (const xmlChar*)ATTR_SID, (const xmlChar*)buildSID(num, getIdx(), id)->getCString());
 			delete id;
 
@@ -3400,7 +3398,7 @@ const char* TextPage::drawImageOrMask(GfxState *state, Object* ref, Stream *str,
 			listeImageInline.push_back(new ImageInline(x0, y0, w0, h0, getIdWORD(), imageIndex, refname, getIdx()));
 		}
 
-		id = new GString("p");
+		id = new GooString("p");
 		xmlNewProp(node, (const xmlChar*)ATTR_CLIPZONE,
 				(const xmlChar*)buildIdClipZone(num, idCur, id)->getCString());
 		delete id;
@@ -3429,7 +3427,7 @@ void file_flush_data (png_structp png_ptr)
 }
 
 
-bool TextPage::save_png (GString* file_name,
+bool TextPage::save_png (GooString* file_name,
 							 unsigned int width, unsigned int height, unsigned int row_stride,
 							 unsigned char* data,
 							 unsigned char bpp, unsigned char color_type, png_color* palette, unsigned short color_count)
@@ -3528,9 +3526,9 @@ bool TextPage::save_png (GString* file_name,
 // XmlOutputDev
 //------------------------------------------------------------------------
 
-XmlOutputDev::XmlOutputDev(GString *fileName, GString *fileNamePdf,
-		Catalog *catalog, GBool physLayoutA, GBool verboseA, GString *nsURIA,
-		GString *cmdA)	{
+XmlOutputDev::XmlOutputDev(GooString *fileName, GooString *fileNamePdf,
+		Catalog *catalog, GBool physLayoutA, GBool verboseA, GooString *nsURIA,
+		GooString *cmdA)	{
 	text = NULL;
 	physLayout = physLayoutA;
 	rawOrder = 1;
@@ -3540,7 +3538,7 @@ XmlOutputDev::XmlOutputDev(GString *fileName, GString *fileNamePdf,
 	docroot = NULL;
 	vecroot = NULL;
 	verbose = verboseA;
-	GString *imgDirName;
+	GooString *imgDirName;
 	Catalog *myCatalog;
 
 	//curstate=(double*)malloc(10000*sizeof(6*double));
@@ -3552,20 +3550,20 @@ XmlOutputDev::XmlOutputDev(GString *fileName, GString *fileNamePdf,
 	fullFontName = parameters->getFullFontName();
 	noImageInline = parameters->getImageInline();
 
-	fileNamePDF = new GString(fileNamePdf);
+	fileNamePDF = new GooString(fileNamePdf);
 
 	if (nsURIA) {
-		nsURI = new GString(nsURIA);
+		nsURI = new GooString(nsURIA);
 	} else {
 		nsURI = NULL;
 	}
 
-	myfilename = new GString(fileName);
+	myfilename = new GooString(fileName);
 
-	dataDir = new GString(fileName);
+	dataDir = new GooString(fileName);
 	dataDir->append("_data");
 
-	imgDirName = new GString(dataDir);
+	imgDirName = new GooString(dataDir);
 
 	// Display images
 	if (parameters->getDisplayImage() || !parameters->getCutAllPages()) {
@@ -3581,20 +3579,20 @@ XmlOutputDev::XmlOutputDev(GString *fileName, GString *fileNamePdf,
 
 #ifndef WIN32
 		char *aux = strdup(fileName->getCString());
-		baseFileName = new GString(basename(aux));
+		baseFileName = new GooString(basename(aux));
 		baseFileName->append("_data/image");
 		free(aux);
 #endif
 
 #ifdef WIN32
-		baseFileName = new GString(fileName);
+		baseFileName = new GooString(fileName);
 		baseFileName->append("_data/image");
 #endif
 
 	}// end IF
 
 
-	lPictureReferences = new GList();
+	lPictureReferences = new GooList();
 
 	doc = xmlNewDoc((const xmlChar*)VERSION);
 
@@ -3621,8 +3619,8 @@ XmlOutputDev::XmlOutputDev(GString *fileName, GString *fileNamePdf,
 	if (!(uMap = globalParams->getTextEncoding())) {
 		return;
 	}		
-	GString *title;
-	title = new GString();
+	GooString *title;
+	title = new GooString();
 	title= toUnicode(fileNamePDF,uMap);
 //	dumpFragment((Unicode*)fileNamePDF, fileNamePDF->getLength(), uMap, title);
 
@@ -3694,7 +3692,7 @@ XmlOutputDev::~XmlOutputDev() {
 //static void XmlOutputDev::printInfoString(Dict *infoDict, char *key, char *text,
 //			    UnicodeMap *uMap) {
 //  Object obj;
-//  GString *s1;
+//  GooString *s1;
 //  GBool isUnicode;
 //  Unicode u;
 //  char buf[8];
@@ -3728,7 +3726,7 @@ XmlOutputDev::~XmlOutputDev() {
 //  obj.free();
 //}
 //
-//void XmlOutputDev::addInfo(GString *fileName,PDFDocXrce *doc){
+//void XmlOutputDev::addInfo(GooString *fileName,PDFDocXrce *doc){
 //	Object info;
 //	UnicodeMap *;
 //
@@ -3761,9 +3759,9 @@ XmlOutputDev::~XmlOutputDev() {
 //}
 
 
-GString* XmlOutputDev::toUnicode(GString *s,UnicodeMap *uMap){
+GooString* XmlOutputDev::toUnicode(GooString *s,UnicodeMap *uMap){
 
-	GString *news;
+	GooString *news;
 	Unicode *uString;
 	int uLen;
 	int j;
@@ -3784,7 +3782,7 @@ GString* XmlOutputDev::toUnicode(GString *s,UnicodeMap *uMap){
 	  }
 	}
 
-	news = new GString();
+	news = new GooString();
 	dumpFragment(uString,uLen,uMap,news);
 
 	return news;
@@ -3831,13 +3829,13 @@ void XmlOutputDev::drawChar(GfxState *state, double x, double y, double dx,
 }
 
 void XmlOutputDev::stroke(GfxState *state) {
-	GString * attr = new GString();
+	GooString * attr = new GooString();
 	char tmp[100];
 	GfxRGB rgb;
 
 	// The stroke attribute : the stroke color value
 	state->getStrokeRGB(&rgb);
-	GString * hexColor = colortoString(rgb);
+	GooString * hexColor = colortoString(rgb);
 	sprintf(tmp, "stroke: %s;", hexColor->getCString() );
 	attr->append(tmp);
 	delete hexColor;
@@ -3922,13 +3920,13 @@ void XmlOutputDev::stroke(GfxState *state) {
 }
 
 void XmlOutputDev::fill(GfxState *state) {
-	GString * attr = new GString();
+	GooString * attr = new GooString();
 	char tmp[100];
 	GfxRGB rgb;
 
 	// The fill attribute which give color value
 	state->getFillRGB(&rgb);
-	GString * hexColor = colortoString(rgb);
+	GooString * hexColor = colortoString(rgb);
 	sprintf(tmp, "fill: %s;", hexColor->getCString() );
 	attr->append(tmp);
 	delete hexColor;
@@ -3942,13 +3940,13 @@ void XmlOutputDev::fill(GfxState *state) {
 }
 
 void XmlOutputDev::eoFill(GfxState *state) {
-	GString * attr = new GString();
+	GooString * attr = new GooString();
 	char tmp[100];
 	GfxRGB rgb;
 
 	// The fill attribute which give color value
 	state->getFillRGB(&rgb);
-	GString * hexColor = colortoString(rgb);
+	GooString * hexColor = colortoString(rgb);
 	sprintf(tmp, "fill: %s;", hexColor->getCString() );
 	attr->append(tmp);
 	delete hexColor;
@@ -3977,7 +3975,7 @@ void XmlOutputDev::clipToStrokePath(GfxState *state) {
 	text->clipToStrokePath(state);
 }
 
-void XmlOutputDev::doPath(GfxPath *path, GfxState *state, GString *gattributes) {
+void XmlOutputDev::doPath(GfxPath *path, GfxState *state, GooString *gattributes) {
 	if (parameters->getDisplayImage()) {
 		text->doPath(path, state, gattributes);
 	}
@@ -3992,21 +3990,21 @@ void XmlOutputDev::restoreState(GfxState *state) {
 }
 
 // Return the hexadecimal value of the color of string
-GString *XmlOutputDev::colortoString(GfxRGB rgb) const {
+GooString *XmlOutputDev::colortoString(GfxRGB rgb) const {
 	char* temp;
 	temp = (char*)malloc(10*sizeof(char));
 	sprintf(temp, "#%02X%02X%02X", static_cast<int>(255*colToDbl(rgb.r)),
 			static_cast<int>(255*colToDbl(rgb.g)), static_cast<int>(255
 					*colToDbl(rgb.b)));
-	GString *tmp = new GString(temp);
+	GooString *tmp = new GooString(temp);
 
 	free(temp);
 
 	return tmp;
 }
 
-GString *XmlOutputDev::convtoX(unsigned int xcol) const {
-	GString *xret=new GString();
+GooString *XmlOutputDev::convtoX(unsigned int xcol) const {
+	GooString *xret=new GooString();
 	char tmp;
 	unsigned int k;
 	k = (xcol/16);
@@ -4208,12 +4206,12 @@ void XmlOutputDev::initOutline(int nbPage) {
 	xmlDocSetRootElement(docOutline, docOutlineRoot);
 }
 
-void XmlOutputDev::generateOutline(GList *itemsA, PDFDoc *docA, int levelA) {
+void XmlOutputDev::generateOutline(GooList *itemsA, PDFDoc *docA, int levelA) {
 	UnicodeMap *uMap;
-	GString *enc;
+	GooString *enc;
 	idItemToc = 0;
 	if (itemsA && itemsA->getLength() > 0) {
-		enc = new GString("UTF-8");  
+		enc = new GooString("UTF-8");  
 		uMap = globalParams->getUnicodeMap(enc);
 		delete enc;
 		dumpOutline(docOutlineRoot,itemsA, docA, uMap, levelA, idItemToc);
@@ -4221,7 +4219,7 @@ void XmlOutputDev::generateOutline(GList *itemsA, PDFDoc *docA, int levelA) {
 	}
 }
 int XmlOutputDev::dumpFragment(Unicode *text, int len, UnicodeMap *uMap,
-		GString *s) {
+		GooString *s) {
 	char lre[8], rle[8], popdf[8], buf[8];
 	int lreLen, rleLen, popdfLen, n;
 	int nCols, i, j, k;
@@ -4309,7 +4307,7 @@ int XmlOutputDev::dumpFragment(Unicode *text, int len, UnicodeMap *uMap,
 	return nCols;
 
 }
-GBool XmlOutputDev::dumpOutline(xmlNodePtr parentNode,GList *itemsA, PDFDoc *docA, UnicodeMap *uMapA,
+GBool XmlOutputDev::dumpOutline(xmlNodePtr parentNode,GooList *itemsA, PDFDoc *docA, UnicodeMap *uMapA,
 		int levelA, int idItemTocParentA) {
 
 	// store them in a list
@@ -4331,7 +4329,7 @@ GBool XmlOutputDev::dumpOutline(xmlNodePtr parentNode,GList *itemsA, PDFDoc *doc
 		return 0;
 	}
 	int i;
-	GString *title;
+	GooString *title;
 
 	nodeTocItem = xmlNewNode(NULL, (const xmlChar*)TAG_TOCITEMLIST);
 	sprintf(tmp, "%d", levelA);
@@ -4347,7 +4345,7 @@ GBool XmlOutputDev::dumpOutline(xmlNodePtr parentNode,GList *itemsA, PDFDoc *doc
 
 	for (i = 0; i < itemsA->getLength(); ++i) {
 
-		title = new GString();
+		title = new GooString();
 
 		((OutlineItem *)itemsA->get(i))->open(); // open the kids 	
 		dumpFragment(((OutlineItem *)itemsA->get(i))->getTitle(), ((OutlineItem *)itemsA->get(i))->getTitleLength(), uMapA, title);
@@ -4355,9 +4353,9 @@ GBool XmlOutputDev::dumpOutline(xmlNodePtr parentNode,GList *itemsA, PDFDoc *doc
 		LinkActionKind kind;
 
 		LinkDest *dest;
-		GString *namedDest;
+		GooString *namedDest;
 
-		GString *fileName;
+		GooString *fileName;
 		int page = 0;
 
 		double left = 0;
@@ -4490,7 +4488,7 @@ GBool XmlOutputDev::dumpOutline(xmlNodePtr parentNode,GList *itemsA, PDFDoc *doc
 }
 
 
-void XmlOutputDev::closeOutline(GString *shortFileName) {
+void XmlOutputDev::closeOutline(GooString *shortFileName) {
 	shortFileName->append("_");
 	shortFileName->append(NAME_OUTLINE);
 	shortFileName->append(EXTENSION_XML);

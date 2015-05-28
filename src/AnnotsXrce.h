@@ -15,7 +15,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "GString.h"
+#include "goo/GooString.h"
 #include "Object.h"
 #include "Catalog.h"
 #include "UnicodeMap.h"
@@ -68,9 +68,9 @@ public:
    */		
 	void transform(double x1, double y1, double *x2, double *y2, double *ctmA);
 	
-	GString*  toUnicode(GString *s,UnicodeMap *uMap);
+	GooString*  toUnicode(GooString *s,UnicodeMap *uMap);
 
-	int dumpFragment(Unicode *text, int len, UnicodeMap *uMap,GString *s);
+	int dumpFragment(Unicode *text, int len, UnicodeMap *uMap,GooString *s);
 
 private:
 

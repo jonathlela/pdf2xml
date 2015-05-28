@@ -12,10 +12,10 @@
 #ifndef PARAMETERS_H_
 #define PARAMETERS_H_
 
-#include "gtypes.h"
+#include "goo/gtypes.h"
 
 #if MULTITHREADED
-#include "GMutex.h"
+#include "goo/GooMutex.h"
 #endif
 
 #include <libxml/xmlmemory.h>

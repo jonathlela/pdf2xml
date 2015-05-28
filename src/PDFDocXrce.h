@@ -22,7 +22,7 @@
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 
-class GString;
+class GooString;
 class BaseStream;
 class OutputDev;
 class Links;
@@ -46,7 +46,7 @@ public:
    * @param ownerPassword The owner password
    * @param userPassword The user password
    */
-	PDFDocXrce(GString *fileNameA, GString *ownerPassword = NULL, GString *userPassword = NULL);
+	PDFDocXrce(GooString *fileNameA, GooString *ownerPassword = NULL, GooString *userPassword = NULL);
 
   /** Destructor
    */

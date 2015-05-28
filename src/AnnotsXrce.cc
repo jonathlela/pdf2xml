@@ -49,7 +49,7 @@ AnnotsXrce::AnnotsXrce(Object &objA, xmlNodePtr docrootA, Catalog *catalog,doubl
   	GBool isLink = gFalse;
 	Object kid;
 
-	GString *news;
+	GooString *news;
 	UnicodeMap *uMap;
 
 	if (!(uMap = globalParams->getTextEncoding())) {
@@ -154,7 +154,7 @@ AnnotsXrce::AnnotsXrce(Object &objA, xmlNodePtr docrootA, Catalog *catalog,doubl
 							LinkGoTo* goto_link = (LinkGoTo*)action;
 							bool newlink = false;
 							LinkDest* link_dest = goto_link->getDest();
-							GString*  name_dest = goto_link->getNamedDest();
+							GooString*  name_dest = goto_link->getNamedDest();
 							if (name_dest != NULL && catalog != NULL)
 							{
 								link_dest = catalog->findDest(name_dest);
@@ -310,8 +310,8 @@ AnnotsXrce::AnnotsXrce(Object &objA, xmlNodePtr docrootA, Catalog *catalog,doubl
 			// Add the id attribut into the annotation tag : format is 'p<pageNumber>_a<annotationNumber>
   			if (nodeAnnot && current){
   				char* tmp=(char*)malloc(10*sizeof(char));
-  				GString *idValue;
-  				idValue = new GString("p");
+  				GooString *idValue;
+  				idValue = new GooString("p");
   				sprintf(tmp,"%d",pageNumA);
   				idValue->append(tmp);
   				idValue->append("_a");
@@ -463,9 +463,9 @@ void AnnotsXrce::transform(double x1, double y1, double *x2, double *y2, double 
     *y2 = c[1] * x1 + c[3] * y1 + c[5];
 }
 
-GString* AnnotsXrce::toUnicode(GString *s,UnicodeMap *uMap){
+GooString* AnnotsXrce::toUnicode(GooString *s,UnicodeMap *uMap){
 
-	GString *news;
+	GooString *news;
 	Unicode *uString;
 	int uLen;
 	int j;
@@ -486,14 +486,14 @@ GString* AnnotsXrce::toUnicode(GString *s,UnicodeMap *uMap){
 	  }
 	}
 
-	news = new GString();
+	news = new GooString();
 	dumpFragment(uString,uLen,uMap,news);
 
 	return news;
 }
 
 int AnnotsXrce::dumpFragment(Unicode *text, int len, UnicodeMap *uMap,
-		GString *s) {
+		GooString *s) {
 	char lre[8], rle[8], popdf[8], buf[8];
 	int lreLen, rleLen, popdfLen, n;
 	int nCols, i, j, k;
