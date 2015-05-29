@@ -37,7 +37,7 @@ pdftoxml is licensed under the GNU General Public License (GPL), version 2.
 Compatibility
 -------------
 
-pdftoxml is developed and tested on a Linux 2.4 x86 system.
+pdftoxml is developed and tested on a Linux 2.6 x86_64 system.
 
 Getting pdftoxml
 ------------

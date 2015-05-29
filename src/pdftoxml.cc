@@ -381,7 +381,8 @@ int main(int argc, char *argv[]) {
   	dataDirName = new GooString(textFileName);
   	dataDirName->append(NAME_DATA_DIR);
   	removeAlreadyExistingData(dataDirName);
-  	
+	delete dataDirName;
+	
   	// Xml file to store annotations informations
   	if (annots){  	
   		xmlDocPtr  docAnnotXml;
@@ -421,6 +422,8 @@ int main(int argc, char *argv[]) {
     delete nsURI;
   }
 
+  delete shortFileName;
+  
  err3:
   delete textFileName;
 
@@ -450,8 +453,8 @@ void removeAlreadyExistingData(GooString *dir) {
 			file->append("/");
 			file->append(lecture->d_name);
 			std::remove(file->getCString());
+			delete file;
    		}
-   		if (file) delete file;
    		closedir(rep);
 	}
 }

@@ -71,7 +71,8 @@ using namespace ConstantsXML;
 #include "Link.h"
 #include "Catalog.h"
 #include "Parameters.h"
-//#include "Page.h"
+#include "Page.h"
+#include "glib/poppler-features.h"
 
 // PNG lib
 #include "png.h"
@@ -130,18 +131,22 @@ using namespace ConstantsXML;
 
 TextFontInfo::TextFontInfo(GfxState *state) {
 	gfxFont = state->getFont();
-	//#if TEXTOUT_WORD_LIST
-	//fontName = (gfxFont && gfxFont->getOrigName()) ? gfxFont->getOrigName()->copy() : (GooString *)NULL;
+	if (gfxFont)
+		gfxFont->incRefCnt();
+	#if TEXTOUT_WORD_LIST
 	fontName = (gfxFont && gfxFont->getName()) ? gfxFont->getName()->copy() : (GooString *)NULL;
-	//#endif
+	flags = gfxFont ? gfxFont->getFlags() : 0;
+	#endif
 }
 
 TextFontInfo::~TextFontInfo() {
-	//#if TEXTOUT_WORD_LIST
+	if (gfxFont)
+    gfxFont->decRefCnt();
+#if TEXTOUT_WORD_LIST
 	if (fontName) {
 		delete fontName;
 	}
-	//#endif
+#endif 
 }
 
 GBool TextFontInfo::matches(GfxState *state) {
@@ -548,7 +553,7 @@ TextPage::TextPage(GBool verboseA, Catalog *catalog, xmlNodePtr node,
 	} else {
 		namespaceURI = NULL;
 	}
-
+	
 	rawWords = NULL;
 	rawLastWord = NULL;
 	fonts = new GooList();
@@ -566,6 +571,12 @@ TextPage::~TextPage() {
 	delete fonts;
 	if (namespaceURI) {
 		delete namespaceURI;
+	}
+	if (RelfileName != NULL) {
+		delete RelfileName;
+	}
+	if (ImgfileName != NULL) {
+		delete ImgfileName;
 	}
 }
 
@@ -608,6 +619,7 @@ void TextPage::startPage(int pageNum, GfxState *state, GBool cut) {
 	id = new GooString("p");
 	id->append(tmp);
 	xmlNewProp(page, (const xmlChar*)ATTR_ID, (const xmlChar*)id->getCString());
+	free(tmp);
 	delete id;
 
 	xmlNodePtr mediaboxtag = NULL;
@@ -622,7 +634,8 @@ void TextPage::startPage(int pageNum, GfxState *state, GBool cut) {
 	xmlNewProp(mediaboxtag, (const xmlChar*)ATTR_X2, (const xmlChar*)tmp);
 	sprintf(tmp, "%g", mediaBox->y2);
 	xmlNewProp(mediaboxtag, (const xmlChar*)ATTR_Y2, (const xmlChar*)tmp);	
-
+	free(tmp);
+	
 	xmlNodePtr cropboxtag = NULL;
 	cropboxtag = xmlNewNode(NULL, (const xmlChar*)TAG_CROPBOX);
 	xmlAddChild(page,cropboxtag);
@@ -635,7 +648,8 @@ void TextPage::startPage(int pageNum, GfxState *state, GBool cut) {
 	xmlNewProp(cropboxtag, (const xmlChar*)ATTR_X2, (const xmlChar*)tmp);
 	sprintf(tmp, "%g", cropBox->y2);
 	xmlNewProp(cropboxtag, (const xmlChar*)ATTR_Y2, (const xmlChar*)tmp);	
-
+	free(tmp);
+	
 	xmlNodePtr bleedboxtag = NULL;
 	bleedboxtag = xmlNewNode(NULL, (const xmlChar*)TAG_BLEEDBOX);
 	xmlAddChild(page,bleedboxtag);
@@ -648,7 +662,8 @@ void TextPage::startPage(int pageNum, GfxState *state, GBool cut) {
 	xmlNewProp(bleedboxtag, (const xmlChar*)ATTR_X2, (const xmlChar*)tmp);
 	sprintf(tmp, "%g", bleedBox->y2);
 	xmlNewProp(bleedboxtag, (const xmlChar*)ATTR_Y2, (const xmlChar*)tmp);	
-
+	free(tmp);
+	
 	xmlNodePtr artboxtag = NULL;
 	artboxtag = xmlNewNode(NULL, (const xmlChar*)TAG_ARTBOX);
 	xmlAddChild(page,artboxtag);
@@ -661,7 +676,7 @@ void TextPage::startPage(int pageNum, GfxState *state, GBool cut) {
 	xmlNewProp(artboxtag, (const xmlChar*)ATTR_X2, (const xmlChar*)tmp);
 	sprintf(tmp, "%g", artBox->y2);
 	xmlNewProp(artboxtag, (const xmlChar*)ATTR_Y2, (const xmlChar*)tmp);	
-
+	free(tmp);
 	
 	xmlNodePtr trimboxtag = NULL;
 	trimboxtag = xmlNewNode(NULL, (const xmlChar*)TAG_TRIMBOX);
@@ -675,6 +690,7 @@ void TextPage::startPage(int pageNum, GfxState *state, GBool cut) {
 	xmlNewProp(trimboxtag, (const xmlChar*)ATTR_X2, (const xmlChar*)tmp);
 	sprintf(tmp, "%g", trimBox->y2);
 	xmlNewProp(trimboxtag, (const xmlChar*)ATTR_Y2, (const xmlChar*)tmp);	
+	free(tmp);
 	
 	// 26/04/2010: commented
 //	if (pageWidth>700 && pageHeight<700) {
@@ -729,9 +745,11 @@ void TextPage::startPage(int pageNum, GfxState *state, GBool cut) {
 //  	printf("start annotations\n");
 	currentPage = myCat->getPage(num);
 	currentPage->getAnnots(&objAnnot);
+#if POPPLER_CHECK_VERSION(0,19,0)
+	pageLinks = currentPage->getLinks();
+#else
 	pageLinks = currentPage->getLinks(myCat);
-	//pageLinks = currentPage->getLinks();
-
+#endif
 	// Annotation's objects list
 	if (objAnnot.isArray()){
 	  	for (int i = 0 ; i < objAnnot.arrayGetLength() ; ++i){
@@ -754,8 +772,6 @@ void TextPage::startPage(int pageNum, GfxState *state, GBool cut) {
 	  	}
 	}
 	objAnnot.free();
-
-	free(tmp);
 }
 
 
@@ -770,83 +786,77 @@ void TextPage::configuration() {
 }
 
 
-
 void TextPage::endPage(GooString *dataDir) {
 	if (curWord) {
 		endWord();
 	}
 
+	GooString *numStr = GooString::fromInt(num);
+
 	if (parameters->getDisplayImage()) {
 
 		xmlNodePtr xiinclude=NULL;
-		xmlNsPtr xiNs = NULL;
 
 		GooString *relname = new GooString(RelfileName);
 		relname->append("-");
-		relname->append(GooString::fromInt(num));
+		relname->append(numStr);
 		relname->append(EXTENSION_VEC);
 
 		GooString *refname = new GooString(ImgfileName);
 		refname->append("-");
-		refname->append(GooString::fromInt(num));
+		refname->append(numStr);
 		refname->append(EXTENSION_VEC);
 
-		xiNs=xmlNewNs(NULL, (const xmlChar*)XI_URI, (const xmlChar*)XI_PREFIX);
-		if (xiNs) {
-			xiinclude = xmlNewNode(xiNs, (const xmlChar*)XI_INCLUDE);
-			xiNs=xmlNewNs(xiinclude, (const xmlChar*)XI_URI,
-					(const xmlChar*)XI_PREFIX);
-			xmlSetNs(xiinclude, xiNs);
-			if (cutter) {
-				// Change the relative path of vectorials images when all pages are cutted
-				GooString *imageName = new GooString("image");
-				imageName->append("-");
-				imageName->append(GooString::fromInt(num));
-				imageName->append(EXTENSION_VEC);
-				// ID: 1850760
-				GooString *cp;
-				cp = refname->copy();
-				for (int i=0;i<cp->getLength();i++){
-					if (cp->getChar(i) ==' '){
-						cp->del(i);
-						cp->insert(i,"%20");
-					}
-				}
-//				printf("%s\n",imageName->getCString());
-				xmlNewProp(xiinclude, (const xmlChar*)ATTR_HREF,
-						(const xmlChar*)cp->getCString());
-				delete imageName;
-				delete cp;
-			} else {
-				// ID: 1850760
-				GooString *cp;
-				cp = refname->copy();
-				for (int i=0;i<cp->getLength();i++){
-					if (cp->getChar(i) ==' '){
-						cp->del(i);
-						cp->insert(i,"%20");
-					}
-				}
-//				printf("%s\n",cp->getCString());				
-				xmlNewProp(xiinclude, (const xmlChar*)ATTR_HREF,
-						(const xmlChar*)cp->getCString());
-				delete cp;
-			}
-
-			if (namespaceURI) {
-				xmlNewNs(xiinclude, (const xmlChar*)namespaceURI->getCString(),
-						NULL);
-			}
-			xmlAddChild(page, xiinclude);
-		} else {
-			fprintf(stderr, "namespace %s : impossible creation\n", XI_PREFIX);
+		xmlNsPtr nsDef = NULL;
+		xiinclude = xmlNewNode(NULL, (const xmlChar*)XI_INCLUDE);
+		nsDef = xmlNewNs(xiinclude,
+						 (const xmlChar*)XI_URI, (const xmlChar*)XI_PREFIX);
+	    if (namespaceURI) {
+			xmlNewNs(xiinclude,
+					 (const xmlChar*)namespaceURI->getCString(), NULL);
+			xmlSetNs(xiinclude, nsDef);
 		}
+		if (cutter) {
+			// Change the relative path of vectorials images when all pages are cutted
+			GooString *imageName = new GooString("image");
+			imageName->append("-");
+			imageName->append(numStr);
+			imageName->append(EXTENSION_VEC);
+			// ID: 1850760
+			GooString *cp;
+			cp = refname->copy();
+			for (int i=0;i<cp->getLength();i++){
+				if (cp->getChar(i) ==' '){
+					cp->del(i);
+					cp->insert(i,"%20");
+				}
+			}
+			//				printf("%s\n",imageName->getCString());
+			xmlNewProp(xiinclude, (const xmlChar*)ATTR_HREF,
+					   (const xmlChar*)cp->getCString());
+			delete imageName;
+			delete cp;
+		} else {
+			// ID: 1850760
+			GooString *cp;
+			cp = refname->copy();
+			for (int i=0;i<cp->getLength();i++){
+				if (cp->getChar(i) ==' '){
+					cp->del(i);
+					cp->insert(i,"%20");
+				}
+			}
+			//				printf("%s\n",cp->getCString());				
+			xmlNewProp(xiinclude, (const xmlChar*)ATTR_HREF,
+					   (const xmlChar*)cp->getCString());
+			delete cp;
+		}
+		xmlAddChild(page, xiinclude);
 
 		// Save the file for example with relname 'p_06.xml_data/image-27.vec'
 		if (!xmlSaveFile(relname->getCString(), vecdoc)) {
 			//error(errIO,-1, "Couldn't open file '%s'", relname->getCString());
 		}
-
 		delete refname;
 		delete relname;
 	}
@@ -858,7 +868,7 @@ void TextPage::endPage(GooString *dataDir) {
 		dataDirectory = new GooString(dataDir);
 		GooString *pageFile = new GooString(dataDirectory);
 		pageFile->append("/pageNum-");
-		pageFile->append(GooString::fromInt(num));
+		pageFile->append(numStr);
 		pageFile->append(EXTENSION_XML);
 
 		if (!xmlSaveFile(pageFile->getCString(), docPage)) {
@@ -868,25 +878,26 @@ void TextPage::endPage(GooString *dataDir) {
 
 		// Add in the principal file XML all pages as a tag xi:include
 		xmlNodePtr nodeXiInclude = NULL;
-		xmlNsPtr nsXi = xmlNewNs(NULL, (const xmlChar*)XI_URI,
-				(const xmlChar*)XI_PREFIX);
-		if (nsXi) {
-			nodeXiInclude = xmlNewNode(nsXi, (const xmlChar*)XI_INCLUDE);
-			nsXi = xmlNewNs(nodeXiInclude, (const xmlChar*)XI_URI,
-					(const xmlChar*)XI_PREFIX);
-			xmlSetNs(nodeXiInclude, nsXi);
-			xmlNewProp(nodeXiInclude, (const xmlChar*)ATTR_HREF,
-					(const xmlChar*)pageFile->getCString());
-			if (namespaceURI) {
-				xmlNewNs(nodeXiInclude,
-						(const xmlChar*)namespaceURI->getCString(), NULL);
-			}
-			xmlAddChild(root, nodeXiInclude);
+		
+		xmlNsPtr nsDef = NULL;
+		nodeXiInclude = xmlNewNode(NULL, (const xmlChar*)XI_INCLUDE);
+		nsDef = xmlNewNs(nodeXiInclude,
+						 (const xmlChar*)XI_URI, (const xmlChar*)XI_PREFIX);
+	    if (namespaceURI) {
+			xmlNewNs(nodeXiInclude,
+					 (const xmlChar*)namespaceURI->getCString(), NULL);
+			xmlSetNs(nodeXiInclude, nsDef);
 		}
+		xmlNewProp(nodeXiInclude, (const xmlChar*)ATTR_HREF,
+				   (const xmlChar*)pageFile->getCString());
+		xmlAddChild(root, nodeXiInclude);
 		delete pageFile;
 	}
 	highlightedObject.clear();
 	underlineObject.clear();
+
+	delete pageLinks;
+	delete numStr;
 }
 
 void TextPage::clear() {
@@ -1351,8 +1362,10 @@ void TextPage::addAttributsNode(xmlNodePtr node, TextWord *word, double &xMaxi,
 	sprintf(tmp, "%g", word->fontSize);
 	xmlNewProp(node, (const xmlChar*)ATTR_FONT_SIZE, (const xmlChar*)tmp);
 
+	GooString* colorString = word->colortoString();
 	xmlNewProp(node, (const xmlChar*)ATTR_FONT_COLOR,
-			(const xmlChar*)word->colortoString()->getCString());
+			(const xmlChar*)colorString->getCString());
+	delete colorString;
 
 	sprintf(tmp, "%d", word->rot);
 	xmlNewProp(node, (const xmlChar*)ATTR_ROTATION, (const xmlChar*)tmp);
@@ -1402,12 +1415,8 @@ void TextPage::testLinkedText(xmlNodePtr node,double xMin,double yMin,double xMa
 	 * if uri:  ad @href= value
 	 * if goto:  add @hlink = ...??what !! = page and position values
 	 */
-	GooString idvalue = new GooString("X");
 	Link *link;
 	LinkAction* action;
-
-	char* tmp;
-	tmp=(char*)malloc(50*sizeof(char));
 
 	for (int j=0;j<pageLinks->getNumLinks();++j){
 //		printf("link num:%d\n",j);
@@ -1478,9 +1487,12 @@ void TextPage::testLinkedText(xmlNodePtr node,double xMin,double yMin,double xMa
 												// TODO FH 25/01/2006 apply transform matrix of destination page, not current page
 												double x,y;
 												curstate->transform(link_dest->getLeft(), link_dest->getTop(), &x, &y);
+												char* tmp;
+												tmp=(char*)malloc(50*sizeof(char));
 												sprintf(tmp,"p-%d %g %g",page,x,y);
 												xmlNewProp(node, (const xmlChar*)ATTR_GOTOLINK,(const xmlChar*)tmp);
 //												printf("link %d %g %g\n",page,x,y);
+												free(tmp);
 												return;
 											//}
 										}
@@ -1489,8 +1501,11 @@ void TextPage::testLinkedText(xmlNodePtr node,double xMin,double yMin,double xMa
 									// link to the page, without a specific location. PDF Data Destruction has hit again!
 									case destFit:  case destFitH: case destFitV: case destFitR:
 									case destFitB: case destFitBH: case destFitBV:
+										char* tmp;
+										tmp=(char*)malloc(50*sizeof(char));	
 										sprintf(tmp,"p-%d",page);
 										xmlNewProp(node, (const xmlChar*)ATTR_GOTOLINK,(const xmlChar*)tmp);
+										free(tmp);
 										return;
 									}
 
@@ -1745,8 +1760,9 @@ void TextPage::dump(GBool blocks, GBool fullFontName) {
 				xMaxRot);
 		addAttributTypeReadingOrder(node, tmp, word);
 
-		xmlNodeSetContent(node, (const xmlChar*)xmlEncodeEntitiesReentrant(
-				node->doc, (const xmlChar*)stringTemp->getCString()));
+		xmlChar* xmlEncoded = (xmlChar*)xmlEncodeEntitiesReentrant(node->doc, (const xmlChar*)stringTemp->getCString());
+		xmlNodeSetContent(node, xmlEncoded);
+		free(xmlEncoded);
 
 		delete stringTemp;
 
@@ -3564,7 +3580,7 @@ XmlOutputDev::XmlOutputDev(GooString *fileName, GooString *fileNamePdf,
 	dataDir->append("_data");
 
 	imgDirName = new GooString(dataDir);
-
+	
 	// Display images
 	if (parameters->getDisplayImage() || !parameters->getCutAllPages()) {
 
@@ -3590,8 +3606,7 @@ XmlOutputDev::XmlOutputDev(GooString *fileName, GooString *fileNamePdf,
 #endif
 
 	}// end IF
-
-
+	
 	lPictureReferences = new GooList();
 
 	doc = xmlNewDoc((const xmlChar*)VERSION);
@@ -3620,15 +3635,14 @@ XmlOutputDev::XmlOutputDev(GooString *fileName, GooString *fileNamePdf,
 		return;
 	}		
 	GooString *title;
-	title = new GooString();
-	title= toUnicode(fileNamePDF,uMap);
+	title=toUnicode(fileNamePDF,uMap);
 //	dumpFragment((Unicode*)fileNamePDF, fileNamePDF->getLength(), uMap, title);
 
 	xmlAddChild(nodeMetadata, nodeNameFilePdf);
-	xmlNodeSetContent(nodeNameFilePdf,
-			(const xmlChar*)xmlEncodeEntitiesReentrant(nodeNameFilePdf->doc,
-					(const xmlChar*)title->getCString()));
-
+	xmlChar* xmlFilename = xmlEncodeEntitiesReentrant(nodeNameFilePdf->doc, (const xmlChar*)title->getCString());
+	xmlNodeSetContent(nodeNameFilePdf, xmlFilename);
+	free(xmlFilename);
+	
 	xmlNodePtr nodeProcess = xmlNewNode(NULL, (const xmlChar*)TAG_PROCESS);
 	nodeProcess->type = XML_ELEMENT_NODE;
 	xmlAddChild(nodeMetadata, nodeProcess);
@@ -3652,24 +3666,30 @@ XmlOutputDev::XmlOutputDev(GooString *fileName, GooString *fileNamePdf,
 	xmlAddChild(nodeProcess, nodeDate);
 	time_t t;
 	time(&t);
-	xmlNodeSetContent(nodeDate, (const xmlChar*)xmlEncodeEntitiesReentrant(
-			nodeDate->doc, (const xmlChar*)ctime(&t)));
+	xmlChar* xmlDate = (xmlChar*)xmlEncodeEntitiesReentrant(nodeDate->doc, (const xmlChar*)ctime(&t));
+	xmlNodeSetContent(nodeDate, (const xmlChar*)ctime(&t));
+	free(xmlDate);
 
 	// The file of vectorials instructions
-	vecdoc = xmlNewDoc((const xmlChar*)VERSION);
-	vecdoc->encoding = xmlStrdup((const xmlChar*)ENCODING_UTF8);
-	vecroot = xmlNewNode(NULL, (const xmlChar*)TAG_VECTORIALINSTRUCTIONS);
+	// vecdoc = xmlNewDoc((const xmlChar*)VERSION);
+	// vecdoc->encoding = xmlStrdup((const xmlChar*)ENCODING_UTF8);
+	// vecroot = xmlNewNode(NULL, (const xmlChar*)TAG_VECTORIALINSTRUCTIONS);
 
-	xmlDocSetRootElement(vecdoc, vecroot);
+	// xmlDocSetRootElement(vecdoc, vecroot);
 
-	xmlNewProp(vecroot, (const xmlChar*)"file",
-			(const xmlChar*)fileName->getCString());
-
+	// xmlNewProp(vecroot, (const xmlChar*)"file",
+	// 		            (const xmlChar*)fileName->getCString());
+	
 	needClose = gFalse;
 
 	delete fileNamePDF;
 
 	text = new TextPage(verbose, catalog, docroot, imgDirName, baseFileName, nsURI);
+	
+	delete dataDir;
+	delete imgDirName;
+	delete baseFileName;
+	delete title;
 }
 
 XmlOutputDev::~XmlOutputDev() {
@@ -3680,12 +3700,14 @@ XmlOutputDev::~XmlOutputDev() {
 		{
 			delete ((PictureReference*) lPictureReferences->get(i));
 		}
+	delete lPictureReferences;
 	if (text) {
 		delete text;
 	}
 	if (nsURI) {
 		delete nsURI;
 	}
+	delete myfilename;
 }
 
 
@@ -3784,7 +3806,7 @@ GooString* XmlOutputDev::toUnicode(GooString *s,UnicodeMap *uMap){
 
 	news = new GooString();
 	dumpFragment(uString,uLen,uMap,news);
-
+	gfree(uString);
 	return news;
 }
 
@@ -3917,6 +3939,7 @@ void XmlOutputDev::stroke(GfxState *state) {
 	attr->append(tmp);
 
 	doPath(state->getPath(), state, attr);
+	delete attr;
 }
 
 void XmlOutputDev::fill(GfxState *state) {
