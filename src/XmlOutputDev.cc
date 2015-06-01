@@ -2161,7 +2161,9 @@ void TextPage::dump(GBool blocks, GBool fullFontName) {
 		}
 	} // end FOR
 
-
+	if (nodeline->parent == NULL)
+		xmlFreeNode(nodeline);
+	
 	free(tmp);
 	delete word;
 	uMap->decRefCnt();
@@ -3960,6 +3962,7 @@ void XmlOutputDev::fill(GfxState *state) {
 	attr->append(tmp);
 
 	doPath(state->getPath(), state, attr);
+	delete attr;
 }
 
 void XmlOutputDev::eoFill(GfxState *state) {
@@ -3983,6 +3986,7 @@ void XmlOutputDev::eoFill(GfxState *state) {
 	attr->append(tmp);
 
 	doPath(state->getPath(), state, attr);
+	delete attr;
 }
 
 void XmlOutputDev::clip(GfxState *state) {

@@ -24,9 +24,12 @@ different systems.
 ***  UNIX  ***
 **************
 
+* Isntall CMake. See http://www.cmake.org
 * Install Glib2 library (Should be already installed on your linux distribution). See https://developer.gnome.org/glib/
 * Install poppler library (Should be already installed on your linux distribution). See http://poppler.freedesktop.org/
 * Install libxml2 (Should be already installed on your linux distribution). See http://xmlsoft.org/
-* Type 'make'.  This should build the executable:
-
+* Type 'cmake -DCMAKE_BUILD_TYPE=RELEASE .' in the top directory to build the makefile
+* Then type 'make'. This should build the executable:
     bin/pdftoxml
+* To install, type 'make install'. The installation directory can be changed when calling cmake by defining
+  'CMAKE_INSTALL_PREFIX' 
