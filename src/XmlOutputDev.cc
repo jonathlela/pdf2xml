@@ -21,6 +21,7 @@
 
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
+#include <libxml/tree.h>
 #include <time.h>
 #include <string>
 #include <list>
@@ -526,13 +527,12 @@ const char* TextWord::normalizeFontName(char* fontName) {
 // TextPage
 //------------------------------------------------------------------------
 
-TextPage::TextPage(GBool verboseA, Catalog *catalog, xmlNodePtr node,
-		GooString* dir, GooString *base, GooString *nsURIA) {
+TextPage::TextPage(GBool verboseA, Catalog *catalog, GooString* dir,
+				   GooString *base, GooString *nsURIA, xmlTextWriterPtr writer) {
 
-	root = node;
 	verbose = verboseA;
+	this->writer = writer;
 	rawOrder = 1;
-
 	curWord = NULL;
 	charPos = 0;
 	curFont = NULL;
@@ -708,8 +708,6 @@ void TextPage::startPage(int pageNum, GfxState *state, GBool cut) {
 		globalParams->setTextEncoding((char*)ENCODING_UTF8);
 		docPage->encoding = xmlStrdup((const xmlChar*)ENCODING_UTF8);
 		xmlDocSetRootElement(docPage, page);
-	} else {
-		xmlAddChild(root, page);
 	}
 
 	//  	fprintf(stderr, "Page %d\n",pageNum);
@@ -795,8 +793,6 @@ void TextPage::endPage(GooString *dataDir) {
 
 	if (parameters->getDisplayImage()) {
 
-		xmlNodePtr xiinclude=NULL;
-
 		GooString *relname = new GooString(RelfileName);
 		relname->append("-");
 		relname->append(numStr);
@@ -807,15 +803,17 @@ void TextPage::endPage(GooString *dataDir) {
 		refname->append(numStr);
 		refname->append(EXTENSION_VEC);
 
+		xmlNodePtr xiinclude = NULL;
 		xmlNsPtr nsDef = NULL;
 		xiinclude = xmlNewNode(NULL, (const xmlChar*)XI_INCLUDE);
 		nsDef = xmlNewNs(xiinclude,
 						 (const xmlChar*)XI_URI, (const xmlChar*)XI_PREFIX);
-	    if (namespaceURI) {
+		if (namespaceURI) {
 			xmlNewNs(xiinclude,
 					 (const xmlChar*)namespaceURI->getCString(), NULL);
 			xmlSetNs(xiinclude, nsDef);
 		}
+		
 		if (cutter) {
 			// Change the relative path of vectorials images when all pages are cutted
 			GooString *imageName = new GooString("image");
@@ -834,6 +832,7 @@ void TextPage::endPage(GooString *dataDir) {
 			//				printf("%s\n",imageName->getCString());
 			xmlNewProp(xiinclude, (const xmlChar*)ATTR_HREF,
 					   (const xmlChar*)cp->getCString());
+			
 			delete imageName;
 			delete cp;
 		} else {
@@ -849,6 +848,7 @@ void TextPage::endPage(GooString *dataDir) {
 			//				printf("%s\n",cp->getCString());				
 			xmlNewProp(xiinclude, (const xmlChar*)ATTR_HREF,
 					   (const xmlChar*)cp->getCString());
+
 			delete cp;
 		}
 		xmlAddChild(page, xiinclude);
@@ -880,6 +880,7 @@ void TextPage::endPage(GooString *dataDir) {
 		xmlNodePtr nodeXiInclude = NULL;
 		
 		xmlNsPtr nsDef = NULL;
+
 		nodeXiInclude = xmlNewNode(NULL, (const xmlChar*)XI_INCLUDE);
 		nsDef = xmlNewNs(nodeXiInclude,
 						 (const xmlChar*)XI_URI, (const xmlChar*)XI_PREFIX);
@@ -888,16 +889,27 @@ void TextPage::endPage(GooString *dataDir) {
 					 (const xmlChar*)namespaceURI->getCString(), NULL);
 			xmlSetNs(nodeXiInclude, nsDef);
 		}
+		
 		xmlNewProp(nodeXiInclude, (const xmlChar*)ATTR_HREF,
 				   (const xmlChar*)pageFile->getCString());
-		xmlAddChild(root, nodeXiInclude);
+		xmlBufferPtr buf = xmlBufferCreate();
+		xmlNodeDump(buf, page->doc, page,0, 0);
+		xmlTextWriterWriteRaw(writer, buf->content);
+		xmlBufferFree(buf);
+		
 		delete pageFile;
+	} else {
+		xmlBufferPtr buf = xmlBufferCreate();
+		xmlNodeDump(buf, page->doc, page,0, 0);
+		xmlTextWriterWriteRaw(writer, buf->content);
+		xmlBufferFree(buf);
 	}
 	highlightedObject.clear();
 	underlineObject.clear();
 
 	delete pageLinks;
 	delete numStr;
+	xmlFreeNode(page);
 }
 
 void TextPage::clear() {
@@ -3551,9 +3563,7 @@ XmlOutputDev::XmlOutputDev(GooString *fileName, GooString *fileNamePdf,
 	physLayout = physLayoutA;
 	rawOrder = 1;
 	ok = gTrue;
-	doc = NULL;
 	vecdoc = NULL;
-	docroot = NULL;
 	vecroot = NULL;
 	verbose = verboseA;
 	GooString *imgDirName;
@@ -3611,27 +3621,18 @@ XmlOutputDev::XmlOutputDev(GooString *fileName, GooString *fileNamePdf,
 	
 	lPictureReferences = new GooList();
 
-	doc = xmlNewDoc((const xmlChar*)VERSION);
+	writer = xmlNewTextWriterFilename(myfilename->getCString(), 0);
 
-	globalParams->setTextEncoding((char*)ENCODING_UTF8);
-	doc->encoding = xmlStrdup((const xmlChar*)ENCODING_UTF8);
-	docroot = xmlNewNode(NULL, (const xmlChar*)TAG_DOCUMENT);
+	xmlTextWriterStartDocument(writer, NULL, (const char*)ENCODING_UTF8, NULL);
 
 	// The namespace DS to add at the DOCUMENT tag
 	if (nsURI) {
-		xmlNewNs(docroot, (const xmlChar*)nsURI->getCString(), NULL);
+		xmlTextWriterStartElementNS(writer, NULL, (const xmlChar*)TAG_DOCUMENT, (const xmlChar*)nsURI);
+	} else {
+		xmlTextWriterStartElement(writer, (const xmlChar*)TAG_DOCUMENT);
 	}
 
-	xmlDocSetRootElement(doc, docroot);
-
-	xmlNodePtr nodeMetadata = xmlNewNode(NULL, (const xmlChar*)TAG_METADATA);
-	nodeMetadata->type = XML_ELEMENT_NODE;
-
-	xmlAddChild(docroot, nodeMetadata);
-
-	xmlNodePtr nodeNameFilePdf = xmlNewNode(NULL,
-			(const xmlChar*)TAG_PDFFILENAME);
-	nodeNameFilePdf->type = XML_ELEMENT_NODE;
+	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_METADATA);
 
 	if (!(uMap = globalParams->getTextEncoding())) {
 		return;
@@ -3639,38 +3640,35 @@ XmlOutputDev::XmlOutputDev(GooString *fileName, GooString *fileNamePdf,
 	GooString *title;
 	title=toUnicode(fileNamePDF,uMap);
 //	dumpFragment((Unicode*)fileNamePDF, fileNamePDF->getLength(), uMap, title);
-
-	xmlAddChild(nodeMetadata, nodeNameFilePdf);
-	xmlChar* xmlFilename = xmlEncodeEntitiesReentrant(nodeNameFilePdf->doc, (const xmlChar*)title->getCString());
-	xmlNodeSetContent(nodeNameFilePdf, xmlFilename);
-	free(xmlFilename);
 	
-	xmlNodePtr nodeProcess = xmlNewNode(NULL, (const xmlChar*)TAG_PROCESS);
-	nodeProcess->type = XML_ELEMENT_NODE;
-	xmlAddChild(nodeMetadata, nodeProcess);
-	xmlNewProp(nodeProcess, (const xmlChar*)ATTR_NAME,
-			(const xmlChar*)PDFTOXML_NAME);
-	xmlNewProp(nodeProcess, (const xmlChar*)ATTR_CMD,
-			(const xmlChar*)cmdA->getCString());
+	xmlChar* xmlFilename = xmlEncodeEntitiesReentrant(NULL, (const xmlChar*)title->getCString());
 
-	xmlNodePtr nodeVersion = xmlNewNode(NULL, (const xmlChar*)TAG_VERSION);
-	nodeVersion->type = XML_ELEMENT_NODE;
-	xmlAddChild(nodeProcess, nodeVersion);
-	xmlNewProp(nodeVersion, (const xmlChar*)ATTR_VALUE,
-			(const xmlChar*)PDFTOXML_VERSION);
+	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_PDFFILENAME);
+	xmlTextWriterWriteString(writer, xmlFilename);
+	xmlTextWriterEndElement(writer);
+	
+	free(xmlFilename);
 
-	xmlNodePtr nodeComment = xmlNewNode(NULL, (const xmlChar*)TAG_COMMENT);
-	nodeComment->type = XML_ELEMENT_NODE;
-	xmlAddChild(nodeVersion, nodeComment);
+	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_PROCESS);
+	xmlTextWriterWriteAttribute(writer, (const xmlChar*)ATTR_NAME, (const xmlChar*)PDFTOXML_NAME);
+	xmlTextWriterWriteAttribute(writer, (const xmlChar*)ATTR_CMD, (const xmlChar*)cmdA->getCString());
+	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_VERSION);
+	xmlTextWriterWriteAttribute(writer, (const xmlChar*)ATTR_VALUE, (const xmlChar*)PDFTOXML_VERSION);
+	xmlTextWriterEndElement(writer);
 
-	xmlNodePtr nodeDate = xmlNewNode(NULL, (const xmlChar*)TAG_CREATIONDATE);
-	nodeDate->type = XML_ELEMENT_NODE;
-	xmlAddChild(nodeProcess, nodeDate);
+	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_COMMENT);
+	xmlTextWriterEndElement(writer);
+
 	time_t t;
 	time(&t);
-	xmlChar* xmlDate = (xmlChar*)xmlEncodeEntitiesReentrant(nodeDate->doc, (const xmlChar*)ctime(&t));
-	xmlNodeSetContent(nodeDate, (const xmlChar*)ctime(&t));
+	xmlChar* xmlDate = (xmlChar*)xmlEncodeEntitiesReentrant(NULL, (const xmlChar*)ctime(&t));
+
+	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_CREATIONDATE);
+	xmlTextWriterWriteString(writer, xmlDate);
+	xmlTextWriterEndElement(writer);
+	
 	free(xmlDate);
+
 
 	// The file of vectorials instructions
 	// vecdoc = xmlNewDoc((const xmlChar*)VERSION);
@@ -3686,18 +3684,22 @@ XmlOutputDev::XmlOutputDev(GooString *fileName, GooString *fileNamePdf,
 
 	delete fileNamePDF;
 
-	text = new TextPage(verbose, catalog, docroot, imgDirName, baseFileName, nsURI);
+	xmlTextWriterEndElement(writer);//TAG_PROCESS
+	xmlTextWriterEndElement(writer);//TAG_METADATA
+	
+	text = new TextPage(verbose, catalog, imgDirName, baseFileName, nsURI, writer);
 	
 	delete dataDir;
 	delete imgDirName;
 	delete baseFileName;
 	delete title;
+
+	//xmlTextWriterEndElement(writer);//TAG_DOCUMENT
 }
 
 XmlOutputDev::~XmlOutputDev() {
-	xmlSaveFile(myfilename->getCString(), doc);
-	xmlFreeDoc(doc);
-
+	xmlTextWriterEndElement(writer);//TAG_DOCUMENT
+	xmlFreeTextWriter(writer);
 	for (int i = 0; i < lPictureReferences->getLength(); i++)
 		{
 			delete ((PictureReference*) lPictureReferences->get(i));

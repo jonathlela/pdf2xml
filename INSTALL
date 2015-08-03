@@ -24,7 +24,7 @@ different systems.
 ***  UNIX  ***
 **************
 
-* Isntall CMake. See http://www.cmake.org
+* Isntall CMake (Should be already installed on your linux distribution). See http://www.cmake.org/
 * Install Glib2 library (Should be already installed on your linux distribution). See https://developer.gnome.org/glib/
 * Install poppler library (Should be already installed on your linux distribution). See http://poppler.freedesktop.org/
 * Install libxml2 (Should be already installed on your linux distribution). See http://xmlsoft.org/

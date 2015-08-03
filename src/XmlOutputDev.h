@@ -44,6 +44,7 @@ using namespace std;
 #include <string>
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
+#include <libxml/xmlwriter.h>
 
 #define xoutRound(x) ((int)(x + 0.5))
 
@@ -469,7 +470,7 @@ public:
    * @param base The directory name which contain all data with the prefix 'image' : <pdfFileName>.xml_data/image 
    * @param nsURIA The namespace specified 
    */
-  TextPage(GBool verboseA,Catalog *catalog, xmlNodePtr node, GooString* dir, GooString *base, GooString *nsURIA);
+	TextPage(GBool verboseA,Catalog *catalog, GooString* dir, GooString *base, GooString *nsURIA, xmlTextWriterPtr writer);
 
   /** Destructor */
   ~TextPage();
@@ -750,9 +751,6 @@ private:
   int idImageInline;
   /** The namespace specified */
   GooString *namespaceURI;
-
-  /** The root element */
-  xmlNodePtr root;
   
   /** The XML document for page */
   xmlDocPtr docPage;
@@ -761,7 +759,7 @@ private:
 
   /** The XML document for each page generated */
   xmlDocPtr pageCut;
-  
+ 
   /** The XML document for vectorials instructions */
   xmlDocPtr vecdoc;
   /** The vectorials intructions element */
@@ -835,6 +833,7 @@ private:
   vector<Dict*>highlightedObject;
   Links *pageLinks;
 
+  xmlTextWriterPtr writer;
 };
 
 
@@ -1026,8 +1025,6 @@ public:
 
   GooString* toUnicode(GooString *s,UnicodeMap *uMap);
 
-
-  xmlNodePtr getDocRoot(){return docroot;}
 private:
 
   /** Generate the path 
@@ -1038,13 +1035,7 @@ private:
 
   double curstate[6];
   //double *curstate[1000];
-  
-  
-  /** The XML document */
-  xmlDocPtr  doc;
-  /** The root node */
-  xmlNodePtr docroot;
-  
+    
   /** The XML document outline */
   xmlDocPtr  docOutline;
   /** The root outline node */
@@ -1100,7 +1091,7 @@ private:
   /** The item id for each toc items */
   int idItemToc;
 
- 
+  xmlTextWriterPtr writer;
 };
 
 #endif
