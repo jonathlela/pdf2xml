@@ -9,6 +9,7 @@ set(lib_srcs
   AnnotsXrce.cc
   PDFDocXrce.cc
   XmlOutputDev.cc
+  libpdftoxml.cc
 )
 
 include_directories(${GLIB2_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${POPPLER_INCLUDE_DIRS})
@@ -28,6 +29,7 @@ set(pdftoxml_SOURCES ${common_srcs}
 )
 
 add_executable(pdftoxml ${pdftoxml_SOURCES})
+
 target_link_libraries(pdftoxml LINK_PUBLIC libpdftoxml ${GLIB2_LIBRARIES} ${LIBXML2_LIBRARIES} ${POPPLER_LIBRARIES})
 
 install(TARGETS pdftoxml libpdftoxml

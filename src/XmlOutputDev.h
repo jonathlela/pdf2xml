@@ -877,6 +877,20 @@ public:
 
   /**
    * Construct a new <code>XmlOutputDev</code><br></br>
+   * Write to an XmlOutputBufferPtr. If <i>physLayoutA</i> is 
+   * <code>true</code>, the original physical ayout of the text is maintained.
+   * If <i>verbose</i> is <code>true</code>, the output xml file will contain 
+   * more informations attributes about TOKEN tag.
+   * @param out The XML output buffer
+   * @param fileNamePdf The PDF file name
+   * @param physLayoutA To know if the physLayout option is selected
+   * @param verboseA To know if the vernose option is selected
+   * @param nsURIA The namespace URI if it specified
+   */
+  XmlOutputDev(xmlOutputBufferPtr out, GooString *fileNamePdf,Catalog *catalog, GBool physLayoutA, GBool verboseA, GooString *nsURIA);
+  
+  /**
+   * Construct a new <code>XmlOutputDev</code><br></br>
    * Open a text output file. If <i>fileName</i> is NULL, no file is written 
    * (this is useful, e.g., for searching text). If <i>physLayoutA</i> is 
    * <code>true</code>, the original physical ayout of the text is maintained.
@@ -1026,7 +1040,15 @@ public:
   GooString* toUnicode(GooString *s,UnicodeMap *uMap);
 
 private:
+  
+  /** Initialize an XmlOutputDev.
+   * @param cmdA The command line used to execute the tool (optional)
+   * @param uMap The Unicode mapping
+   * @param imgDirName The image directory name (only if display image)
+   */
+  void init(Catalog *catalog, GooString *cmdA, UnicodeMap *uMap, GooString *imgDirName);
 
+  
   /** Generate the path 
    * @param path The current path
    * @param state The state description

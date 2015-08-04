@@ -545,6 +545,8 @@ TextPage::TextPage(GBool verboseA, Catalog *catalog, GooString* dir,
 	idCur = 0;
 	curstate = NULL;
 	myCat = catalog;
+	RelfileName = NULL;
+	ImgfileName = NULL;
 
 	idx = 0; //EG
 
@@ -3550,7 +3552,123 @@ bool TextPage::save_png (GooString* file_name,
 	return true;
 }
 
+void XmlOutputDev::init(Catalog *catalog, GooString *cmdA, UnicodeMap *uMap, GooString *imgDirName)	{
+	xmlTextWriterStartDocument(writer, NULL, (const char*)ENCODING_UTF8, NULL);
 
+	// The namespace DS to add at the DOCUMENT tag
+	if (nsURI) {
+		xmlTextWriterStartElementNS(writer, NULL, (const xmlChar*)TAG_DOCUMENT, (const xmlChar*)nsURI);
+	} else {
+		xmlTextWriterStartElement(writer, (const xmlChar*)TAG_DOCUMENT);
+	}
+
+	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_METADATA);
+	
+	GooString *title;
+	title=toUnicode(fileNamePDF,uMap);
+//	dumpFragment((Unicode*)fileNamePDF, fileNamePDF->getLength(), uMap, title);
+	
+	xmlChar* xmlFilename = xmlEncodeEntitiesReentrant(NULL, (const xmlChar*)title->getCString());
+
+	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_PDFFILENAME);
+	xmlTextWriterWriteString(writer, xmlFilename);
+	xmlTextWriterEndElement(writer);
+
+	delete title;
+	free(xmlFilename);
+
+	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_PROCESS);
+	xmlTextWriterWriteAttribute(writer, (const xmlChar*)ATTR_NAME, (const xmlChar*)PDFTOXML_NAME);
+
+	if (cmdA) {
+		xmlTextWriterWriteAttribute(writer, (const xmlChar*)ATTR_CMD, (const xmlChar*)cmdA->getCString());
+	}
+	
+	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_VERSION);
+	xmlTextWriterWriteAttribute(writer, (const xmlChar*)ATTR_VALUE, (const xmlChar*)PDFTOXML_VERSION);
+	xmlTextWriterEndElement(writer);
+
+	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_COMMENT);
+	xmlTextWriterEndElement(writer);
+
+	time_t t;
+	time(&t);
+	xmlChar* xmlDate = (xmlChar*)xmlEncodeEntitiesReentrant(NULL, (const xmlChar*)ctime(&t));
+
+	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_CREATIONDATE);
+	xmlTextWriterWriteString(writer, xmlDate);
+	xmlTextWriterEndElement(writer);
+	
+	free(xmlDate);
+
+
+	// The file of vectorials instructions
+	// vecdoc = xmlNewDoc((const xmlChar*)VERSION);
+	// vecdoc->encoding = xmlStrdup((const xmlChar*)ENCODING_UTF8);
+	// vecroot = xmlNewNode(NULL, (const xmlChar*)TAG_VECTORIALINSTRUCTIONS);
+
+	// xmlDocSetRootElement(vecdoc, vecroot);
+
+	// xmlNewProp(vecroot, (const xmlChar*)"file",
+	// 		            (const xmlChar*)fileName->getCString());
+	
+	needClose = gFalse;
+
+	xmlTextWriterEndElement(writer);//TAG_PROCESS
+	xmlTextWriterEndElement(writer);//TAG_METADATA
+	
+	text = new TextPage(verbose, catalog, imgDirName, baseFileName, nsURI, writer);
+   
+	//xmlTextWriterEndElement(writer);//TAG_DOCUMENT
+}
+
+XmlOutputDev::XmlOutputDev(xmlOutputBufferPtr out, GooString *fileNamePdf,
+	    Catalog *catalog, GBool physLayoutA, GBool verboseA, GooString *nsURIA) {
+	text = NULL;
+	physLayout = physLayoutA;
+	rawOrder = 1;
+	ok = gTrue;
+	vecdoc = NULL;
+	vecroot = NULL;
+	verbose = verboseA;
+	Catalog *myCatalog;
+
+	myCatalog = catalog;
+	
+	UnicodeMap *uMap;
+	if (!(uMap = globalParams->getTextEncoding())) {
+		return;
+	}		
+	
+	parameters->setDisplayBlocks(gTrue);
+	blocks = parameters->getDisplayBlocks();
+	parameters->setFullFontName(gFalse);
+	fullFontName = parameters->getFullFontName();
+	parameters->setImageInline(gFalse);
+	noImageInline = parameters->getImageInline();
+	parameters->setCutAllPages(gTrue);
+	parameters->setDisplayText(gTrue);
+	parameters->setDisplayImage(gFalse);
+	parameters->setDisplayOutline(gFalse);
+	globalParams->setErrQuiet(gTrue);
+
+	fileNamePDF = new GooString(fileNamePdf);
+	baseFileName =NULL;
+	dataDir = NULL;
+	myfilename = NULL;
+
+	if (nsURIA) {
+		nsURI = new GooString(nsURIA);
+	} else {
+		nsURI = NULL;
+	}
+
+	lPictureReferences = new GooList();
+
+	writer = xmlNewTextWriter(out);
+
+	init(catalog, NULL, uMap, NULL);
+}
 
 //------------------------------------------------------------------------
 // XmlOutputDev
@@ -3572,7 +3690,11 @@ XmlOutputDev::XmlOutputDev(GooString *fileName, GooString *fileNamePdf,
 	//curstate=(double*)malloc(10000*sizeof(6*double));
 
 	myCatalog = catalog;
+	
 	UnicodeMap *uMap;
+	if (!(uMap = globalParams->getTextEncoding())) {
+		return;
+	}		
 
 	blocks = parameters->getDisplayBlocks();
 	fullFontName = parameters->getFullFontName();
@@ -3623,78 +3745,9 @@ XmlOutputDev::XmlOutputDev(GooString *fileName, GooString *fileNamePdf,
 
 	writer = xmlNewTextWriterFilename(myfilename->getCString(), 0);
 
-	xmlTextWriterStartDocument(writer, NULL, (const char*)ENCODING_UTF8, NULL);
+	init(catalog, cmdA, uMap, imgDirName);
 
-	// The namespace DS to add at the DOCUMENT tag
-	if (nsURI) {
-		xmlTextWriterStartElementNS(writer, NULL, (const xmlChar*)TAG_DOCUMENT, (const xmlChar*)nsURI);
-	} else {
-		xmlTextWriterStartElement(writer, (const xmlChar*)TAG_DOCUMENT);
-	}
-
-	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_METADATA);
-
-	if (!(uMap = globalParams->getTextEncoding())) {
-		return;
-	}		
-	GooString *title;
-	title=toUnicode(fileNamePDF,uMap);
-//	dumpFragment((Unicode*)fileNamePDF, fileNamePDF->getLength(), uMap, title);
-	
-	xmlChar* xmlFilename = xmlEncodeEntitiesReentrant(NULL, (const xmlChar*)title->getCString());
-
-	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_PDFFILENAME);
-	xmlTextWriterWriteString(writer, xmlFilename);
-	xmlTextWriterEndElement(writer);
-	
-	free(xmlFilename);
-
-	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_PROCESS);
-	xmlTextWriterWriteAttribute(writer, (const xmlChar*)ATTR_NAME, (const xmlChar*)PDFTOXML_NAME);
-	xmlTextWriterWriteAttribute(writer, (const xmlChar*)ATTR_CMD, (const xmlChar*)cmdA->getCString());
-	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_VERSION);
-	xmlTextWriterWriteAttribute(writer, (const xmlChar*)ATTR_VALUE, (const xmlChar*)PDFTOXML_VERSION);
-	xmlTextWriterEndElement(writer);
-
-	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_COMMENT);
-	xmlTextWriterEndElement(writer);
-
-	time_t t;
-	time(&t);
-	xmlChar* xmlDate = (xmlChar*)xmlEncodeEntitiesReentrant(NULL, (const xmlChar*)ctime(&t));
-
-	xmlTextWriterStartElement(writer, (const xmlChar*)TAG_CREATIONDATE);
-	xmlTextWriterWriteString(writer, xmlDate);
-	xmlTextWriterEndElement(writer);
-	
-	free(xmlDate);
-
-
-	// The file of vectorials instructions
-	// vecdoc = xmlNewDoc((const xmlChar*)VERSION);
-	// vecdoc->encoding = xmlStrdup((const xmlChar*)ENCODING_UTF8);
-	// vecroot = xmlNewNode(NULL, (const xmlChar*)TAG_VECTORIALINSTRUCTIONS);
-
-	// xmlDocSetRootElement(vecdoc, vecroot);
-
-	// xmlNewProp(vecroot, (const xmlChar*)"file",
-	// 		            (const xmlChar*)fileName->getCString());
-	
-	needClose = gFalse;
-
-	delete fileNamePDF;
-
-	xmlTextWriterEndElement(writer);//TAG_PROCESS
-	xmlTextWriterEndElement(writer);//TAG_METADATA
-	
-	text = new TextPage(verbose, catalog, imgDirName, baseFileName, nsURI, writer);
-	
-	delete dataDir;
 	delete imgDirName;
-	delete baseFileName;
-	delete title;
-
-	//xmlTextWriterEndElement(writer);//TAG_DOCUMENT
 }
 
 XmlOutputDev::~XmlOutputDev() {
@@ -3711,7 +3764,12 @@ XmlOutputDev::~XmlOutputDev() {
 	if (nsURI) {
 		delete nsURI;
 	}
+	delete dataDir;
 	delete myfilename;
+	delete fileNamePDF;
+	if (parameters->getDisplayImage() || !parameters->getCutAllPages()) {
+		delete baseFileName;
+	}
 }
 
 
