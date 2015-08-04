@@ -3670,6 +3670,54 @@ XmlOutputDev::XmlOutputDev(xmlOutputBufferPtr out, GooString *fileNamePdf,
 	init(catalog, NULL, uMap, NULL);
 }
 
+XmlOutputDev::XmlOutputDev(xmlParserCtxtPtr ctx, GooString *fileNamePdf,
+	    Catalog *catalog, GBool physLayoutA, GBool verboseA, GooString *nsURIA) {
+	text = NULL;
+	physLayout = physLayoutA;
+	rawOrder = 1;
+	ok = gTrue;
+	vecdoc = NULL;
+	vecroot = NULL;
+	verbose = verboseA;
+	Catalog *myCatalog;
+
+	myCatalog = catalog;
+	
+	UnicodeMap *uMap;
+	if (!(uMap = globalParams->getTextEncoding())) {
+		return;
+	}		
+	
+	parameters->setDisplayBlocks(gTrue);
+	blocks = parameters->getDisplayBlocks();
+	parameters->setFullFontName(gFalse);
+	fullFontName = parameters->getFullFontName();
+	parameters->setImageInline(gFalse);
+	noImageInline = parameters->getImageInline();
+	parameters->setCutAllPages(gTrue);
+	parameters->setDisplayText(gTrue);
+	parameters->setDisplayImage(gFalse);
+	parameters->setDisplayOutline(gFalse);
+	globalParams->setErrQuiet(gTrue);
+
+	fileNamePDF = new GooString(fileNamePdf);
+	baseFileName =NULL;
+	dataDir = NULL;
+	myfilename = NULL;
+
+	if (nsURIA) {
+		nsURI = new GooString(nsURIA);
+	} else {
+		nsURI = NULL;
+	}
+
+	lPictureReferences = new GooList();
+
+	writer = xmlNewTextWriterPushParser(ctx, 0);
+
+	init(catalog, NULL, uMap, NULL);
+}
+
 //------------------------------------------------------------------------
 // XmlOutputDev
 //------------------------------------------------------------------------

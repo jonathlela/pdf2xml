@@ -877,7 +877,7 @@ public:
 
   /**
    * Construct a new <code>XmlOutputDev</code><br></br>
-   * Write to an XmlOutputBufferPtr. If <i>physLayoutA</i> is 
+   * Write to an xmlOutputBufferPtr. If <i>physLayoutA</i> is 
    * <code>true</code>, the original physical ayout of the text is maintained.
    * If <i>verbose</i> is <code>true</code>, the output xml file will contain 
    * more informations attributes about TOKEN tag.
@@ -888,6 +888,21 @@ public:
    * @param nsURIA The namespace URI if it specified
    */
   XmlOutputDev(xmlOutputBufferPtr out, GooString *fileNamePdf,Catalog *catalog, GBool physLayoutA, GBool verboseA, GooString *nsURIA);
+
+  
+  /**
+   * Construct a new <code>XmlOutputDev</code><br></br>
+   * Write to an xmlParserCtxPtr. If <i>physLayoutA</i> is 
+   * <code>true</code>, the original physical ayout of the text is maintained.
+   * If <i>verbose</i> is <code>true</code>, the output xml file will contain 
+   * more informations attributes about TOKEN tag.
+   * @param out The XML push parser context
+   * @param fileNamePdf The PDF file name
+   * @param physLayoutA To know if the physLayout option is selected
+   * @param verboseA To know if the vernose option is selected
+   * @param nsURIA The namespace URI if it specified
+   */
+  XmlOutputDev(xmlParserCtxtPtr ctx, GooString *fileNamePdf,Catalog *catalog, GBool physLayoutA, GBool verboseA, GooString *nsURIA);
   
   /**
    * Construct a new <code>XmlOutputDev</code><br></br>
