@@ -1,7 +1,7 @@
 #include "XmlOutputDev.h"
 #include "PDFDocXrce.h"
 #include "libxml/xmlIO.h"
-#include "libpdftoxml.h"
+#include "pdftoxml.h"
 
 void pdftoxmlFileWithOptions(const char *filename, FILE* file, const char  *ownerPassword, const char *userPassword, int firstPage, int lastPage, const char *namespaceURI) {
 	PDFDocXrce *doc;
