@@ -127,10 +127,10 @@ using namespace ConstantsXML;
 #define dupMaxSecDelta 0.2
 
 //------------------------------------------------------------------------
-// TextFontInfo
+// XmlTextFontInfo
 //------------------------------------------------------------------------
 
-TextFontInfo::TextFontInfo(GfxState *state) {
+XmlTextFontInfo::XmlTextFontInfo(GfxState *state) {
 	gfxFont = state->getFont();
 	if (gfxFont)
 		gfxFont->incRefCnt();
@@ -140,7 +140,7 @@ TextFontInfo::TextFontInfo(GfxState *state) {
 	#endif
 }
 
-TextFontInfo::~TextFontInfo() {
+XmlTextFontInfo::~XmlTextFontInfo() {
 	if (gfxFont)
     gfxFont->decRefCnt();
 #if TEXTOUT_WORD_LIST
@@ -150,7 +150,7 @@ TextFontInfo::~TextFontInfo() {
 #endif 
 }
 
-GBool TextFontInfo::matches(GfxState *state) {
+GBool XmlTextFontInfo::matches(GfxState *state) {
 	return state->getFont() == gfxFont;
 }
 
@@ -175,12 +175,12 @@ ImageInline::~ImageInline() {
 }
 
 //------------------------------------------------------------------------
-// TextWord
+// XmlTextWord
 //------------------------------------------------------------------------
 
-TextWord::TextWord(GfxState *state, int rotA, int angleDegre,
+XmlTextWord::XmlTextWord(GfxState *state, int rotA, int angleDegre,
 		int angleSkewingY, int angleSkewingX, double x0, double y0,
-		int charPosA, TextFontInfo *fontA, double fontSizeA, int idCurrentWord,
+		int charPosA, XmlTextFontInfo *fontA, double fontSizeA, int idCurrentWord,
 		int index) {
 	GfxFont *gfxFont;
 	double x, y, ascent, descent;
@@ -323,12 +323,12 @@ TextWord::TextWord(GfxState *state, int rotA, int angleDegre,
 	colorB = colToDbl(rgb.b);
 }
 
-TextWord::~TextWord() {
+XmlTextWord::~XmlTextWord() {
 	gfree(text);
 	gfree(edge);
 }
 
-void TextWord::addChar(GfxState *state, double x, double y, double dx,
+void XmlTextWord::addChar(GfxState *state, double x, double y, double dx,
 		double dy, Unicode u) {
 
 	if (len == size) {
@@ -371,7 +371,7 @@ void TextWord::addChar(GfxState *state, double x, double y, double dx,
 	++len;
 }
 
-void TextWord::merge(TextWord *word) {
+void XmlTextWord::merge(XmlTextWord *word) {
 	int i;
 
 	if (word->xMin < xMin) {
@@ -400,7 +400,7 @@ void TextWord::merge(TextWord *word) {
 	charLen += word->charLen;
 }
 
-inline int TextWord::primaryCmp(TextWord *word) {
+inline int XmlTextWord::primaryCmp(XmlTextWord *word) {
 	double cmp;
 
 	cmp = 0; // make gcc happy
@@ -421,7 +421,7 @@ inline int TextWord::primaryCmp(TextWord *word) {
 	return cmp< 0 ? -1 : cmp> 0 ?1 : 0;
 }
 
-double TextWord::primaryDelta(TextWord *word) {
+double XmlTextWord::primaryDelta(XmlTextWord *word) {
 	double delta;
 
 	delta = 0; // make gcc happy
@@ -442,14 +442,14 @@ double TextWord::primaryDelta(TextWord *word) {
 	return delta;
 }
 
-GBool TextWord::overlap(TextWord *w2){
+GBool XmlTextWord::overlap(XmlTextWord *w2){
 
 	return gFalse;
 }
 
-int TextWord::cmpYX(const void *p1, const void *p2) {
-	TextWord *word1 = *(TextWord **)p1;
-	TextWord *word2 = *(TextWord **)p2;
+int XmlTextWord::cmpYX(const void *p1, const void *p2) {
+	XmlTextWord *word1 = *(XmlTextWord **)p1;
+	XmlTextWord *word2 = *(XmlTextWord **)p2;
 	double cmp;
 
 	cmp = word1->yMin - word2->yMin;
@@ -459,7 +459,7 @@ int TextWord::cmpYX(const void *p1, const void *p2) {
 	return cmp< 0 ? -1 : cmp> 0 ?1 : 0;
 }
 
-GooString *TextWord::convtoX(double xcol) const {
+GooString *XmlTextWord::convtoX(double xcol) const {
 	GooString *xret=new GooString();
 	char tmp;
 	unsigned int k;
@@ -481,7 +481,7 @@ GooString *TextWord::convtoX(double xcol) const {
 	return xret;
 }
 
-GooString *TextWord::colortoString() const {
+GooString *XmlTextWord::colortoString() const {
 	GooString *tmp=new GooString("#");
 	GooString *tmpr=convtoX(static_cast<int>(255*colorR));
 	GooString *tmpg=convtoX(static_cast<int>(255*colorG));
@@ -496,7 +496,7 @@ GooString *TextWord::colortoString() const {
 	return tmp;
 }
 
-const char* TextWord::normalizeFontName(char* fontName) {
+const char* XmlTextWord::normalizeFontName(char* fontName) {
         string name (fontName);
         string name2;
         string name3;
@@ -524,10 +524,10 @@ const char* TextWord::normalizeFontName(char* fontName) {
 }
 
 //------------------------------------------------------------------------
-// TextPage
+// XmlTextPage
 //------------------------------------------------------------------------
 
-TextPage::TextPage(GBool verboseA, Catalog *catalog, GooString* dir,
+XmlTextPage::XmlTextPage(GBool verboseA, Catalog *catalog, GooString* dir,
 				   GooString *base, GooString *nsURIA, xmlTextWriterPtr writer) {
 
 	verbose = verboseA;
@@ -568,7 +568,7 @@ TextPage::TextPage(GBool verboseA, Catalog *catalog, GooString* dir,
 	}
 }
 
-TextPage::~TextPage() {
+XmlTextPage::~XmlTextPage() {
 	clear();
 	delete fonts;
 	if (namespaceURI) {
@@ -582,7 +582,7 @@ TextPage::~TextPage() {
 	}
 }
 
-void TextPage::startPage(int pageNum, GfxState *state, GBool cut) {
+void XmlTextPage::startPage(int pageNum, GfxState *state, GBool cut) {
 	clear();
 	char *tmp;
 	cutter = cut;
@@ -775,7 +775,7 @@ void TextPage::startPage(int pageNum, GfxState *state, GBool cut) {
 }
 
 
-void TextPage::configuration() {
+void XmlTextPage::configuration() {
 	if (curWord) {
 		endWord();
 	}
@@ -786,7 +786,7 @@ void TextPage::configuration() {
 }
 
 
-void TextPage::endPage(GooString *dataDir) {
+void XmlTextPage::endPage(GooString *dataDir) {
 	if (curWord) {
 		endWord();
 	}
@@ -914,8 +914,8 @@ void TextPage::endPage(GooString *dataDir) {
 	xmlFreeNode(page);
 }
 
-void TextPage::clear() {
-	TextWord *word;
+void XmlTextPage::clear() {
+	XmlTextWord *word;
 
 	if (curWord) {
 		delete curWord;
@@ -928,7 +928,7 @@ void TextPage::clear() {
 			delete word;
 		}
 	}
-	deleteGooList(fonts, TextFontInfo);
+	deleteGooList(fonts, XmlTextFontInfo);
 
 	curWord = NULL;
 	charPos = 0;
@@ -950,7 +950,7 @@ void TextPage::clear() {
 
 }
 
-void TextPage::updateFont(GfxState *state) {
+void XmlTextPage::updateFont(GfxState *state) {
 
 	GfxFont *gfxFont;
 	double *fm;
@@ -962,7 +962,7 @@ void TextPage::updateFont(GfxState *state) {
 	// get the font info object
 	curFont = NULL;
 	for (i = 0; i < fonts->getLength(); ++i) {
-		curFont = (TextFontInfo *)fonts->get(i);
+		curFont = (XmlTextFontInfo *)fonts->get(i);
 
 		if (curFont->matches(state)) {
 			break;
@@ -971,7 +971,7 @@ void TextPage::updateFont(GfxState *state) {
 	}
 
 	if (!curFont) {
-		curFont = new TextFontInfo(state);
+		curFont = new XmlTextFontInfo(state);
 		fonts->append(curFont);
 	}
 
@@ -1019,7 +1019,7 @@ void TextPage::updateFont(GfxState *state) {
 }
 }
 
-void TextPage::beginWord(GfxState *state, double x0, double y0) {
+void XmlTextPage::beginWord(GfxState *state, double x0, double y0) {
 
 	double *fontm;
 	double m[4];
@@ -1031,7 +1031,7 @@ void TextPage::beginWord(GfxState *state, double x0, double y0) {
 	double tan;
 
 	// This check is needed because Type 3 characters can contain
-	// text-drawing operations (when TextPage is being used via
+	// text-drawing operations (when XmlTextPage is being used via
 	// {X,Win}SplashOutputDev rather than TextOutputDev).
 	if (curWord) {
 		++nest;
@@ -1119,10 +1119,10 @@ void TextPage::beginWord(GfxState *state, double x0, double y0) {
 	idx++;
 
 	curWord
-			= new TextWord(state, rot, angle, angleSkewingY, angleSkewingX, x0, y0, charPos, curFont, curFontSize, getIdWORD(), getIdx());
+			= new XmlTextWord(state, rot, angle, angleSkewingY, angleSkewingX, x0, y0, charPos, curFont, curFontSize, getIdWORD(), getIdx());
 }
 
-void TextPage::addChar(GfxState *state, double x, double y, double dx,
+void XmlTextPage::addChar(GfxState *state, double x, double y, double dx,
 		double dy, CharCode c, int nBytes, Unicode *u, int uLen) {
 
 	double x1, y1, w1, h1, dx2, dy2, base, sp, delta;
@@ -1267,9 +1267,9 @@ void TextPage::addChar(GfxState *state, double x, double y, double dx,
 
 }
 
-void TextPage::endWord() {
+void XmlTextPage::endWord() {
 	// This check is needed because Type 3 characters can contain
-	// text-drawing operations (when TextPage is being used via
+	// text-drawing operations (when XmlTextPage is being used via
 	// {X,Win}SplashOutputDev rather than TextOutputDev).
 	if (nest > 0) {
 		--nest;
@@ -1284,7 +1284,7 @@ void TextPage::endWord() {
 
 }
 
-void TextPage::addWord(TextWord *word) {
+void XmlTextPage::addWord(XmlTextWord *word) {
 	// throw away zero-length words -- they don't have valid xMin/xMax
 	// values, and they're useless anyway
 	if (word->len == 0) {
@@ -1302,8 +1302,8 @@ void TextPage::addWord(TextWord *word) {
 	}
 }
 
-void TextPage::addAttributTypeReadingOrder(xmlNodePtr node, char* tmp,
-		TextWord *word) {
+void XmlTextPage::addAttributTypeReadingOrder(xmlNodePtr node, char* tmp,
+		XmlTextWord *word) {
 	int nbLeft = 0;
 	int nbRight = 0;
 
@@ -1323,8 +1323,8 @@ void TextPage::addAttributTypeReadingOrder(xmlNodePtr node, char* tmp,
 	}
 }
 
-void TextPage::addAttributsNodeVerbose(xmlNodePtr node, char* tmp,
-		TextWord *word) {
+void XmlTextPage::addAttributsNodeVerbose(xmlNodePtr node, char* tmp,
+		XmlTextWord *word) {
 	sprintf(tmp, "%d", word->angleSkewing_Y);
 	xmlNewProp(node, (const xmlChar*)ATTR_ANGLE_SKEWING_Y, (const xmlChar*)tmp);
 	sprintf(tmp, "%d", word->angleSkewing_X);
@@ -1343,7 +1343,7 @@ void TextPage::addAttributsNodeVerbose(xmlNodePtr node, char* tmp,
 	xmlNewProp(node, (const xmlChar*)ATTR_CHAR_SPACE, (const xmlChar*)tmp);
 }
 
-void TextPage::addAttributsNode(xmlNodePtr node, TextWord *word, double &xMaxi,
+void XmlTextPage::addAttributsNode(xmlNodePtr node, XmlTextWord *word, double &xMaxi,
 		double &yMaxi, double &yMinRot, double &yMaxRot, double &xMinRot,
 		double &xMaxRot) {
 
@@ -1422,7 +1422,7 @@ void TextPage::addAttributsNode(xmlNodePtr node, TextWord *word, double &xMaxi,
 
 	free(tmp);
 }
-void TextPage::testLinkedText(xmlNodePtr node,double xMin,double yMin,double xMax,double yMax){
+void XmlTextPage::testLinkedText(xmlNodePtr node,double xMin,double yMin,double xMax,double yMax){
 	/*
 	 * first test if overlap
 	 * then create stuff for ml node:
@@ -1545,11 +1545,11 @@ void TextPage::testLinkedText(xmlNodePtr node,double xMin,double yMin,double xMa
 }
 
 
-GBool TextPage::testOverlap(double x11,double y11,double x12,double y12,double x21,double y21,double x22,double y22){
+GBool XmlTextPage::testOverlap(double x11,double y11,double x12,double y12,double x21,double y21,double x22,double y22){
 	return ( (min(x12,x22) >= max(x11,x21)) &&
 			 (min(y12,y22) >= max(y11,y21)) );
 }
-GBool TextPage::testAnnotatedText(double xMin,double yMin,double xMax,double yMax){
+GBool XmlTextPage::testAnnotatedText(double xMin,double yMin,double xMax,double yMax){
   	Object objQuadPoints;
   	Dict *dict;
 
@@ -1601,10 +1601,10 @@ GBool TextPage::testAnnotatedText(double xMin,double yMin,double xMax,double yMa
   	return gFalse;
 }
 
-void TextPage::dump(GBool blocks, GBool fullFontName) {
+void XmlTextPage::dump(GBool blocks, GBool fullFontName) {
 	UnicodeMap *uMap;
 
-	TextWord *word;
+	XmlTextWord *word;
 	GooString *stringTemp;
 
 	GooString *id;
@@ -2185,8 +2185,8 @@ void TextPage::dump(GBool blocks, GBool fullFontName) {
 
 }
 
-void TextPage::addImageInlineNode(xmlNodePtr nodeline,
-		xmlNodePtr nodeImageInline, char* tmp, TextWord *word) {
+void XmlTextPage::addImageInlineNode(xmlNodePtr nodeline,
+		xmlNodePtr nodeImageInline, char* tmp, XmlTextWord *word) {
 	indiceImage = -1;
 	idWORDBefore = -1;
 	GBool first= gTrue;
@@ -2291,7 +2291,7 @@ void TextPage::addImageInlineNode(xmlNodePtr nodeline,
 	}
 }
 
-GooString* TextPage::buildIdImage(int pageNum, int imageNum, GooString *id) {
+GooString* XmlTextPage::buildIdImage(int pageNum, int imageNum, GooString *id) {
 	char* tmp=(char*)malloc(10*sizeof(char));
 	sprintf(tmp, "%d", pageNum);
 	id->append(tmp);
@@ -2302,7 +2302,7 @@ GooString* TextPage::buildIdImage(int pageNum, int imageNum, GooString *id) {
 	return id;
 }
 
-GooString* TextPage::buildSID(int pageNum, int sid, GooString *id) {
+GooString* XmlTextPage::buildSID(int pageNum, int sid, GooString *id) {
 	char* tmp=(char*)malloc(10*sizeof(char));
 	sprintf(tmp, "%d", pageNum);
 	id->append(tmp);
@@ -2312,7 +2312,7 @@ GooString* TextPage::buildSID(int pageNum, int sid, GooString *id) {
 	free(tmp);
 	return id;
 }
-GooString* TextPage::buildIdText(int pageNum, int textNum, GooString *id) {
+GooString* XmlTextPage::buildIdText(int pageNum, int textNum, GooString *id) {
 	char* tmp=(char*)malloc(10*sizeof(char));
 	sprintf(tmp, "%d", pageNum);
 	id->append(tmp);
@@ -2323,7 +2323,7 @@ GooString* TextPage::buildIdText(int pageNum, int textNum, GooString *id) {
 	return id;
 }
 
-GooString* TextPage::buildIdToken(int pageNum, int tokenNum, GooString *id) {
+GooString* XmlTextPage::buildIdToken(int pageNum, int tokenNum, GooString *id) {
 	char* tmp=(char*)malloc(10*sizeof(char));
 	sprintf(tmp, "%d", pageNum);
 	id->append(tmp);
@@ -2334,7 +2334,7 @@ GooString* TextPage::buildIdToken(int pageNum, int tokenNum, GooString *id) {
 	return id;
 }
 
-GooString* TextPage::buildIdBlock(int pageNum, int blockNum, GooString *id) {
+GooString* XmlTextPage::buildIdBlock(int pageNum, int blockNum, GooString *id) {
 	char* tmp=(char*)malloc(10*sizeof(char));
 	sprintf(tmp, "%d", pageNum);
 	id->append(tmp);
@@ -2345,7 +2345,7 @@ GooString* TextPage::buildIdBlock(int pageNum, int blockNum, GooString *id) {
 	return id;
 }
 
-GooString* TextPage::buildIdClipZone(int pageNum, int clipZoneNum, GooString *id) {
+GooString* XmlTextPage::buildIdClipZone(int pageNum, int clipZoneNum, GooString *id) {
 	char* tmp=(char*)malloc(10*sizeof(char));
 	sprintf(tmp, "%d", pageNum);
 	id->append(tmp);
@@ -2356,7 +2356,7 @@ GooString* TextPage::buildIdClipZone(int pageNum, int clipZoneNum, GooString *id
 	return id;
 }
 
-int TextPage::dumpFragment(Unicode *text, int len, UnicodeMap *uMap, GooString *s) {
+int XmlTextPage::dumpFragment(Unicode *text, int len, UnicodeMap *uMap, GooString *s) {
 	char lre[8], rle[8], popdf[8], buf[8];
 	int lreLen, rleLen, popdfLen, n;
 	int nCols, i, j, k;
@@ -2444,17 +2444,17 @@ int TextPage::dumpFragment(Unicode *text, int len, UnicodeMap *uMap, GooString *
 	return nCols;
 }
 
-void TextPage::saveState(GfxState *state) {
+void XmlTextPage::saveState(GfxState *state) {
 	idStack.push(idCur);
 }
 
-void TextPage::restoreState(GfxState *state) {
+void XmlTextPage::restoreState(GfxState *state) {
 
 	idCur = idStack.top();
 	idStack.pop();
 }
 
-void TextPage::doPathForClip(GfxPath *path, GfxState *state,
+void XmlTextPage::doPathForClip(GfxPath *path, GfxState *state,
 		xmlNodePtr currentNode) {
 	char * tmp;
 	tmp = (char*)malloc(500*sizeof(char));
@@ -2476,7 +2476,7 @@ void TextPage::doPathForClip(GfxPath *path, GfxState *state,
 	free(tmp);
 }
 
-void TextPage::doPath(GfxPath *path, GfxState *state, GooString* gattributes) {
+void XmlTextPage::doPath(GfxPath *path, GfxState *state, GooString* gattributes) {
 
 	// Increment the absolute object index
 	idx++;
@@ -2504,7 +2504,7 @@ void TextPage::doPath(GfxPath *path, GfxState *state, GooString* gattributes) {
 	createPath(path, state, groupNode);
 }
 
-void TextPage::createPath(GfxPath *path, GfxState *state, xmlNodePtr groupNode) {
+void XmlTextPage::createPath(GfxPath *path, GfxState *state, xmlNodePtr groupNode) {
 	GfxSubpath *subpath;
 	double x0, y0, x1, y1, x2, y2, x3, y3;
 	int n, m, i, j;
@@ -2605,7 +2605,7 @@ void TextPage::createPath(GfxPath *path, GfxState *state, xmlNodePtr groupNode) 
 	free(tmp);
 }
 
-void TextPage::clip(GfxState *state) {
+void XmlTextPage::clip(GfxState *state) {
 	idClip++;
 	idCur = idClip;
 
@@ -2651,7 +2651,7 @@ void TextPage::clip(GfxState *state) {
 	doPathForClip(state->getPath(), state, gnode);
 }
 
-void TextPage::eoClip(GfxState *state) {
+void XmlTextPage::eoClip(GfxState *state) {
 
 	idClip++;
 	idCur = idClip;
@@ -2696,7 +2696,7 @@ void TextPage::eoClip(GfxState *state) {
 	doPathForClip(state->getPath(), state, gnode);
 }
 
-void TextPage::clipToStrokePath(GfxState *state) {
+void XmlTextPage::clipToStrokePath(GfxState *state) {
 
 	idClip++;
 	idCur = idClip;
@@ -2743,7 +2743,7 @@ void TextPage::clipToStrokePath(GfxState *state) {
 }
 
 // Draw the image mask
-void TextPage::drawImageMask(GfxState *state, Object *ref, Stream *str,
+void XmlTextPage::drawImageMask(GfxState *state, Object *ref, Stream *str,
 		int width, int height, GBool invert, GBool inlineImg, GBool dumpJPEG,
 		int imageIndex) {
 
@@ -2887,7 +2887,7 @@ void TextPage::drawImageMask(GfxState *state, Object *ref, Stream *str,
 	return;
 }
 // Draw the image
-void TextPage::drawImage(GfxState *state, Object *ref, Stream *str, int width,
+void XmlTextPage::drawImage(GfxState *state, Object *ref, Stream *str, int width,
 		int height, GfxImageColorMap *colorMap, int *maskColors,
 		GBool inlineImg, GBool dumpJPEG, int imageIndex) {
 
@@ -3075,7 +3075,7 @@ void TextPage::drawImage(GfxState *state, Object *ref, Stream *str, int width,
 	return;
 }
 
-const char* TextPage::drawImageOrMask(GfxState *state, Object* ref, Stream *str,
+const char* XmlTextPage::drawImageOrMask(GfxState *state, Object* ref, Stream *str,
 			       int width, int height,
 			       GfxImageColorMap *colorMap,
 			       int* /* maskColors */, GBool inlineImg, GBool mask, int imageIndex)
@@ -3459,7 +3459,7 @@ void file_flush_data (png_structp png_ptr)
 }
 
 
-bool TextPage::save_png (GooString* file_name,
+bool XmlTextPage::save_png (GooString* file_name,
 							 unsigned int width, unsigned int height, unsigned int row_stride,
 							 unsigned char* data,
 							 unsigned char bpp, unsigned char color_type, png_color* palette, unsigned short color_count)
@@ -3617,7 +3617,7 @@ void XmlOutputDev::init(Catalog *catalog, GooString *cmdA, UnicodeMap *uMap, Goo
 	xmlTextWriterEndElement(writer);//TAG_PROCESS
 	xmlTextWriterEndElement(writer);//TAG_METADATA
 	
-	text = new TextPage(verbose, catalog, imgDirName, baseFileName, nsURI, writer);
+	text = new XmlTextPage(verbose, catalog, imgDirName, baseFileName, nsURI, writer);
    
 	//xmlTextWriterEndElement(writer);//TAG_DOCUMENT
 }

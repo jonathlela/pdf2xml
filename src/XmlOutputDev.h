@@ -68,10 +68,10 @@ class XmlOutputDev;
 typedef void (*TextOutputFunc)(void *stream, char *text, int len);
 
 //------------------------------------------------------------------------
-// TextFontInfo
+// XmlTextFontInfo
 //------------------------------------------------------------------------
 /** 
- * TextFontInfo class (based on TextOutputDev.h, Copyright 1997-2003 Glyph & Cog, LLC)<br></br>
+ * XmlTextFontInfo class (based on TextOutputDev.h, Copyright 1997-2003 Glyph & Cog, LLC)<br></br>
  * Xerox Research Centre Europe <br></br>
  * @date 04-2006
  * @author Herv� D�jean
@@ -79,11 +79,11 @@ typedef void (*TextOutputFunc)(void *stream, char *text, int len);
  * @version xpdf 3.01
  */
 
-class TextFontInfo {
+class XmlTextFontInfo {
 public:
 
-  TextFontInfo(GfxState *state);
-  ~TextFontInfo();
+  XmlTextFontInfo(GfxState *state);
+  ~XmlTextFontInfo();
 
   GBool matches(GfxState *state);
 
@@ -107,20 +107,20 @@ private:
   int flags;
 //#endif
 
-  friend class TextWord;
-  friend class TextPage;
+  friend class XmlTextWord;
+  friend class XmlTextPage;
 };
-//class TextFontInfo {
+//class XmlTextFontInfo {
 //public:
 //
-//  /** Construct a new <code>TextFontInfo</code> 
+//  /** Construct a new <code>XmlTextFontInfo</code> 
 //   * @param state The state 
 //   */
-//  TextFontInfo(GfxState *state);
+//  XmlTextFontInfo(GfxState *state);
 //  
 //  /** Destructor 
 //   */
-//  ~TextFontInfo();
+//  ~XmlTextFontInfo();
 //
 //  /** Match the state font with the current font
 //   * @param state The state description */
@@ -135,8 +135,8 @@ private:
 //  GooString *fontName;
 //#endif
 //
-//  friend class TextWord;
-//  friend class TextPage;
+//  friend class XmlTextWord;
+//  friend class XmlTextPage;
 //};
 
 //------------------------------------------------------------------------
@@ -236,25 +236,25 @@ private:
   /** The path current image */
   GooString* hrefImage;
 
-  friend class TextWord;
-  friend class TextPage;
+  friend class XmlTextWord;
+  friend class XmlTextPage;
 };
 
 //------------------------------------------------------------------------
-// TextWord
+// XmlTextWord
 //------------------------------------------------------------------------
 /** 
- * TextWord class (based on TextOutputDev.h, Copyright 1997-2003 Glyph & Cog, LLC)<br></br>
+ * XmlTextWord class (based on TextOutputDev.h, Copyright 1997-2003 Glyph & Cog, LLC)<br></br>
  * Xerox Research Centre Europe <br></br>
  * @date 04-2006
  * @author Herv� D�jean
  * @author Sophie Andrieu 
  * @version xpdf 3.01 */
  
-class TextWord {
+class XmlTextWord {
 public:
 
-  /** Construct a new <code>TextWord</code> 
+  /** Construct a new <code>XmlTextWord</code> 
    * @param state The state description
    * @param rotA The rotation value of the current word
    * @param angleDegre The angle value of the current word (value in degree)
@@ -267,11 +267,11 @@ public:
    * @param fontSize The font size about the current word
    * @param idWord The id of the word (used to include and localize the image inline in the stream)
    * @param idx The absolute object index in the stream */
-  TextWord(GfxState *state, int rotA, int angleDegre, int angleSkewingY, int angleSkewingX, double x0, double y0,
-	   int charPosA, TextFontInfo *fontA, double fontSize, int idWord, int index);
+  XmlTextWord(GfxState *state, int rotA, int angleDegre, int angleSkewingY, int angleSkewingX, double x0, double y0,
+	   int charPosA, XmlTextFontInfo *fontA, double fontSize, int idWord, int index);
 
   /** Destructor */
-  ~TextWord();
+  ~XmlTextWord();
 
   /** Get the absolute object index in the stream 
    * @return The absolute object index in the stream */
@@ -290,21 +290,21 @@ public:
 
   /** Merge <code>word</code> onto the end of <code>this</code>
    *  @param word The current word */
-  void merge(TextWord *word);
+  void merge(XmlTextWord *word);
 
   /** Compares <code>this</code> to <code>word</code>, returning -1 (<), 0 (=), or +1 (>),<br></br>
    *  based on a primary-axis comparison, e.g., x ordering if rot=0
    *  @param word The current word */
-  int primaryCmp(TextWord *word);
+  int primaryCmp(XmlTextWord *word);
 
   /** Get the distance along the primary axis between <code>this</code> and <code>word</code>
    *  @param word The current word */
-  double primaryDelta(TextWord *word);
+  double primaryDelta(XmlTextWord *word);
 
   /**
    * return True if overlap with w2
    */
-  GBool overlap(TextWord *w2);
+  GBool overlap(XmlTextWord *w2);
 
   static int cmpYX(const void *p1, const void *p2);
 
@@ -312,16 +312,16 @@ public:
    *  @return The font name of the current word */
   GooString *getFontName(){return fontName;}
   
-  /** Check if the current <code>TextWord</code> is <b>bold</b>
-   *  @return <code>true</code> if the current <code>TextWord</code> is <b>bold</b>, <code>false</code> else */
+  /** Check if the current <code>XmlTextWord</code> is <b>bold</b>
+   *  @return <code>true</code> if the current <code>XmlTextWord</code> is <b>bold</b>, <code>false</code> else */
   GBool isBold() {return bold;}
   
-  /** Check if the current <code>TextWord</code> is <b>italic</b>
-   *  @return <code>true</code> if the current <code>TextWord</code> is <b>italic</b>, <code>false</code> else */
+  /** Check if the current <code>XmlTextWord</code> is <b>italic</b>
+   *  @return <code>true</code> if the current <code>XmlTextWord</code> is <b>italic</b>, <code>false</code> else */
   GBool isItalic() {return italic;}
   
-  /** Check if the current <code>TextWord</code> is <b>symbolic</b>
-   *  @return <code>true</code> if the current <code>TextWord</code> is <b>symbolic</b>, <code>false</code> else */
+  /** Check if the current <code>XmlTextWord</code> is <b>symbolic</b>
+   *  @return <code>true</code> if the current <code>XmlTextWord</code> is <b>symbolic</b>, <code>false</code> else */
   GBool isSymbloic() {return symbolic;}
 
   /** Get the color RGB of the word
@@ -417,17 +417,17 @@ private:
   /** The number of content stream characters in this word */
   int charLen;
 
-  /** <code>true</code> if the current <code>TextWord</code> is <b>bold</b>, <code>false</code> else */
+  /** <code>true</code> if the current <code>XmlTextWord</code> is <b>bold</b>, <code>false</code> else */
   GBool  bold;
-  /** <code>true</code> if the current <code>TextWord</code> is <b>italic</b>, <code>false</code> else */
+  /** <code>true</code> if the current <code>XmlTextWord</code> is <b>italic</b>, <code>false</code> else */
   GBool  italic;
-  /** <code>true</code> if the current <code>TextWord</code> is <b>symbolic</b>, <code>false</code> else */
+  /** <code>true</code> if the current <code>XmlTextWord</code> is <b>symbolic</b>, <code>false</code> else */
   GBool  symbolic;
-  /** <code>true</code> if the current <code>TextWord</code> is <b>serif</b>, <code>false</code> else */
+  /** <code>true</code> if the current <code>XmlTextWord</code> is <b>serif</b>, <code>false</code> else */
   GBool  serif;
   
   /** The font information */
-  TextFontInfo *font;
+  XmlTextFontInfo *font;
   /** The font name */
   GooString* fontName;
   /** The font size */
@@ -436,7 +436,7 @@ private:
   /** To set if there is a space between this word and the next word on the line */
   GBool spaceAfter;
   /** The next word in line */
-  TextWord *next;
+  XmlTextWord *next;
 
   /** The value of word Red color */
   double colorR;
@@ -445,14 +445,14 @@ private:
   /** The value of word Blue color */
   double colorB;
 
-  friend class TextPage;
+  friend class XmlTextPage;
 };
 
 //------------------------------------------------------------------------
-// TextPage
+// XmlTextPage
 //------------------------------------------------------------------------
 /** 
- * TextPage class (based on TextOutputDev.h, Copyright 1997-2003 Glyph & Cog, LLC)<br></br>
+ * XmlTextPage class (based on TextOutputDev.h, Copyright 1997-2003 Glyph & Cog, LLC)<br></br>
  * Xerox Research Centre Europe <br></br>
  * @date 04-2006
  * @author Herv� D�jean
@@ -460,20 +460,20 @@ private:
  * @version xpdf 3.01
  */
 
-class TextPage {
+class XmlTextPage {
 public:
 
-  /** Construct a new <code>TextPage</code> 
+  /** Construct a new <code>XmlTextPage</code> 
    * @param verboseA The value of the verbose option
    * @param node The root node
    * @param dir The directory which contain all data
    * @param base The directory name which contain all data with the prefix 'image' : <pdfFileName>.xml_data/image 
    * @param nsURIA The namespace specified 
    */
-	TextPage(GBool verboseA,Catalog *catalog, GooString* dir, GooString *base, GooString *nsURIA, xmlTextWriterPtr writer);
+	XmlTextPage(GBool verboseA,Catalog *catalog, GooString* dir, GooString *base, GooString *nsURIA, xmlTextWriterPtr writer);
 
   /** Destructor */
-  ~TextPage();
+  ~XmlTextPage();
 
   /** Start a new page
    * @param pageNum The numero of the current page
@@ -519,7 +519,7 @@ public:
 
   /** Add a word, sorting it into the list of words
    *  @param word The current word */
-  void addWord(TextWord *word);
+  void addWord(XmlTextWord *word);
 
   /** Dump contents of the current page
    * @param blocks To know if the blocks option is selected 
@@ -533,13 +533,13 @@ public:
    * @param nodeImageInline The TOKEN node which represents the image inline to add to the current line
    * @param tmp A variable to build attributes
    * @param word The word which has been read */
-  void addImageInlineNode(xmlNodePtr nodeline, xmlNodePtr nodeImageInline, char* tmp, TextWord *word);
+  void addImageInlineNode(xmlNodePtr nodeline, xmlNodePtr nodeImageInline, char* tmp, XmlTextWord *word);
   
   /** Add attributes to TOKEN node when verbose option is selected 
    * @param node The current TOKEN node
    * @param tmp A variable which store the string attributs values
    * @param word The current word */
-  void addAttributsNodeVerbose(xmlNodePtr node, char* tmp, TextWord *word);
+  void addAttributsNodeVerbose(xmlNodePtr node, char* tmp, XmlTextWord *word);
   
   /** Add all minimum attributes to TOKEN node 
    * @param node The current TOKEN node
@@ -550,13 +550,13 @@ public:
    * @param yMaxRot The y value maximum coordinate of the left bottom corner word box (used for rotation 1 and 3) 
    * @param xMinRot The x value minimum coordinate of the left bottom corner word box (used for rotation 1 and 3) 
    * @param xMaxRot The x value maximum coordinate of the left bottom corner word box (used for rotation 1 and 3) */
-  void addAttributsNode(xmlNodePtr node, TextWord *word, double &xMaxi, double &yMaxi, double &yMinRot,double &yMaxRot, double &xMinRot, double &xMaxRot);
+  void addAttributsNode(xmlNodePtr node, XmlTextWord *word, double &xMaxi, double &yMaxi, double &yMinRot,double &yMaxRot, double &xMinRot, double &xMaxRot);
   
   /** Add the type attribute to TOKEN node for the reading order 
    * @param node The current TOKEN node
    * @param tmp A variable which store the string attributs values
    * @param word The current word */
-  void addAttributTypeReadingOrder(xmlNodePtr node, char* tmp, TextWord *word);
+  void addAttributTypeReadingOrder(xmlNodePtr node, char* tmp, XmlTextWord *word);
   
   /** Add the GROUP tag whithin the instructions vectorials node 
    * @param path The path description 
@@ -788,11 +788,11 @@ private:
   /** The height of current page */
   double pageHeight;
   /** The currently active string */
-  TextWord *curWord;
+  XmlTextWord *curWord;
   /** The next character position (within content stream) */
   int charPos;
   /** The current font */
-  TextFontInfo *curFont;
+  XmlTextFontInfo *curFont;
   /** The current font size */
   double curFontSize;
   /** The current nesting level (for Type 3 fonts) */
@@ -807,10 +807,10 @@ private:
   /** The primary direction (<code>true</code> means L-to-R, <code>false</code> means R-to-L) */
   GBool primaryLR;
   /** The list of words, in raw order (only if rawOrder is set) */
-  TextWord *rawWords;
+  XmlTextWord *rawWords;
   /** The last word on rawWords list */
-  TextWord *rawLastWord;
-  /** All fonts info objects used on this page <code>TextFontInfo</code> */
+  XmlTextWord *rawLastWord;
+  /** All fonts info objects used on this page <code>XmlTextFontInfo</code> */
   GooList *fonts;
   /** The <b>x</b> value coordinate of the last "find" result */
   double lastFindXMin;
@@ -1089,7 +1089,7 @@ private:
   /** Need to close the output file? (only if outputStream is a FILE*) */
   GBool needClose;
   /** The text of the current page */
-  TextPage *text;
+  XmlTextPage *text;
   /** To maintain original physical layout when dumping text */
   GBool physLayout;
   /** To keep text in content stream order */
