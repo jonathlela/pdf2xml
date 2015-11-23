@@ -1134,6 +1134,11 @@ void XmlTextPage::addChar(GfxState *state, double x, double y, double dx,
 		return;
 	}
 
+	if (u == 0) {
+		endWord();
+		return;
+	}
+
 	// if the previous char was a space, addChar will have called
 	// endWord, so we need to start a new word
 	if (!curWord) {
