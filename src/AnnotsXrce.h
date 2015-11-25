@@ -26,6 +26,8 @@
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 
+#include "glib/poppler-features.h"
+
 /**
  * AnnotsXrce class <br></br>
  * This class is used to recover text markup annotations (Highlight and Underline)<br></br>
@@ -43,7 +45,11 @@ public:
    * @param ctmA The matrix values used to get the transformation
    * @param pageNumA The numero of page where this annotation is located
    */
+#if POPPLER_CHECK_VERSION(0,17,0)
+	AnnotsXrce(PDFDoc* pdfdoc, Object &objA, xmlNodePtr docrootA, Catalog *catalog,double *ctmA, int pageNumA);
+#else
 	AnnotsXrce(Object &objA, xmlNodePtr docrootA, Catalog *catalog,double *ctmA, int pageNumA);
+#endif
 
   /** Destructor
    */

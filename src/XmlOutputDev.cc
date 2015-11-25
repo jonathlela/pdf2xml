@@ -58,7 +58,7 @@ using namespace ConstantsXML;
 #include <direct.h>  // for _mkdir
 #endif
 
-#include "glib/gmem.h"
+#include "glib.h"
 #include "goo/GooList.h"
 #include "poppler-config.h"
 #include "Error.h"
@@ -73,7 +73,7 @@ using namespace ConstantsXML;
 #include "Catalog.h"
 #include "Parameters.h"
 #include "Page.h"
-#include "glib/poppler-features.h"
+#include "glib.h"
 
 // PNG lib
 #include "png.h"
@@ -1434,7 +1434,11 @@ void XmlTextPage::testLinkedText(xmlNodePtr node,double xMin,double yMin,double 
 	 * if uri:  ad @href= value
 	 * if goto:  add @hlink = ...??what !! = page and position values
 	 */
+#if POPPLER_CHECK_VERSION(0,17,0)
+	AnnotLink *link;
+#else
 	Link *link;
+#endif
 	LinkAction* action;
 
 	for (int j=0;j<pageLinks->getNumLinks();++j){
@@ -2816,7 +2820,7 @@ void XmlTextPage::drawImageMask(GfxState *state, Object *ref, Stream *str,
 		relname->append(".jpg");
 		refname->append(".jpg");
 		// initialize stream
-		str = ((DCTStream *)str)->getRawStream();
+		str = ((FilterStream *)str)->getNextStream();
 		str->reset();
 
 		// copy the stream
@@ -2970,7 +2974,7 @@ void XmlTextPage::drawImage(GfxState *state, Object *ref, Stream *str, int width
 		}
 
 		// initialize stream
-		str = ((DCTStream *)str)->getRawStream();
+		str = ((FilterStream *)str)->getNextStream();
 		str->reset();
 
 		// copy the stream
@@ -3179,7 +3183,7 @@ const char* XmlTextPage::drawImageOrMask(GfxState *state, Object* ref, Stream *s
 			if (img_file != NULL)
 			{
 				// initialize stream
-				str = ((DCTStream *)str)->getRawStream();
+				str = ((FilterStream *)str)->getNextStream();
 				str->reset();
 
 				int c;
@@ -3447,7 +3451,7 @@ const char* XmlTextPage::drawImageOrMask(GfxState *state, Object* ref, Stream *s
 
 void file_write_data (png_structp png_ptr, png_bytep data, png_size_t length)
 {
-	FILE* file = (FILE*) png_ptr->io_ptr;
+	FILE* file = (FILE*) png_get_io_ptr(png_ptr);
 
 	if (fwrite(data, 1, length,file) != length)
 		png_error(png_ptr, "Write Error");
@@ -3457,7 +3461,7 @@ void file_write_data (png_structp png_ptr, png_bytep data, png_size_t length)
 
 void file_flush_data (png_structp png_ptr)
 {
-	FILE* file = (FILE*) png_ptr->io_ptr;
+	FILE* file = (FILE*) png_get_io_ptr(png_ptr);
 
 	if (fflush(file))
 		png_error(png_ptr, "Flush Error");
@@ -3493,8 +3497,11 @@ bool XmlTextPage::save_png (GooString* file_name,
 		png_destroy_write_struct(&png_ptr, (png_infopp) NULL);
 		return false;
 	}
-
+#if PNG_LIBPNG_VER >= 10500
+	if (setjmp(png_jmpbuf(png_ptr)))
+#else
 	if (setjmp(png_ptr->jmpbuf))
+#endif
 	{
 		png_destroy_write_struct(&png_ptr, (png_infopp) &info_ptr);
 		fclose(file);
@@ -3502,19 +3509,26 @@ bool XmlTextPage::save_png (GooString* file_name,
 	}
 
 	// Writing functions
-    png_set_write_fn(png_ptr, file, (png_rw_ptr) file_write_data, (png_flush_ptr) file_flush_data);
+	png_set_write_fn(png_ptr, file, (png_rw_ptr) file_write_data, (png_flush_ptr) file_flush_data);
 
 	// Image header
-	info_ptr->width				= width;
-	info_ptr->height			= height;
-	info_ptr->pixel_depth		= bpp;
-	info_ptr->channels			= (bpp>8) ? (unsigned char)3: (unsigned char)1;
-	info_ptr->bit_depth			= (unsigned char)(bpp/info_ptr->channels);
-	info_ptr->color_type		= color_type;
-	info_ptr->compression_type	= info_ptr->filter_type = 0;
-	info_ptr->valid				= 0;
-	info_ptr->rowbytes			= row_stride;
-	info_ptr->interlace_type	= PNG_INTERLACE_NONE;
+	unsigned char channels = (bpp>8) ? (unsigned char)3: (unsigned char)1;
+	unsigned char bit_depth = (unsigned char)(bpp/channels);
+
+	if (palette != NULL)
+        {
+                png_set_IHDR(png_ptr, info_ptr, width, height, bit_depth,
+                             PNG_COLOR_TYPE_PALETTE, PNG_INTERLACE_NONE,
+                             PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+		
+		png_set_PLTE(png_ptr, info_ptr, palette, color_count);
+	}
+	else
+	{
+		png_set_IHDR(png_ptr, info_ptr, width, height, bit_depth,
+	                     color_type, PNG_INTERLACE_NONE,
+                             PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+	}
 
 	// Background
 	png_color_16 image_background={ 0, 255, 255, 255, 0 };
@@ -3522,17 +3536,6 @@ bool XmlTextPage::save_png (GooString* file_name,
 
 	// Metrics
 	png_set_pHYs(png_ptr, info_ptr, 3780, 3780, PNG_RESOLUTION_METER); // 3780 dot per meter
-
-	// Palette
-	if (palette != NULL)
-	{
-		png_set_IHDR(png_ptr, info_ptr, info_ptr->width, info_ptr->height, info_ptr->bit_depth,
-					 PNG_COLOR_TYPE_PALETTE, info_ptr->interlace_type,
-					 PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
-		info_ptr->valid |= PNG_INFO_PLTE;
-		info_ptr->palette = palette;
-		info_ptr->num_palette = color_count;
-	}
 
 	// Write the file header
 	png_write_info(png_ptr, info_ptr);

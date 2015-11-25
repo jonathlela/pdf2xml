@@ -827,7 +827,11 @@ private:
   int idCur;
   
   AnnotsXrce **annotsArray;		// annotations array
+#if POPPLER_CHECK_VERSION(0,17,0)
+  vector<AnnotLink*> linkList;
+#else
   vector<Link*> linkList;
+#endif
 
   vector<Dict*>underlineObject;
   vector<Dict*>highlightedObject;

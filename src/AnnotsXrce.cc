@@ -20,6 +20,7 @@
 #include "PDFDocEncoding.h"
 #include "GlobalParams.h"
 #include "UnicodeTypeTable.h"
+#include "Annot.h"
 
 
 using namespace ConstantsXML;
@@ -27,7 +28,11 @@ using namespace ConstantsXML;
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 
+#if POPPLER_CHECK_VERSION(0,17,0)
+AnnotsXrce::AnnotsXrce(PDFDoc* pdfdoc, Object &objA, xmlNodePtr docrootA, Catalog *catalog,double *ctmA, int pageNumA){
+#else
 AnnotsXrce::AnnotsXrce(Object &objA, xmlNodePtr docrootA, Catalog *catalog,double *ctmA, int pageNumA){
+#endif
 	
 	idAnnot = 1;
 	double x, y;
@@ -87,7 +92,11 @@ AnnotsXrce::AnnotsXrce(Object &objA, xmlNodePtr docrootA, Catalog *catalog,doubl
 
   			// Get informations about Link annotation
   			if (isLink){
+#if POPPLER_CHECK_VERSION(0,17,0)
+				AnnotLink *link = new AnnotLink(pdfdoc,dict,&objA);
+#else
 				Link *link = new Link(dict,catalog->getBaseURI());
+#endif
 				//printf("%d \n",link->isOk());
 				LinkAction * ac= link->getAction();
 				//printf("ac %d \n",ac->isOk());

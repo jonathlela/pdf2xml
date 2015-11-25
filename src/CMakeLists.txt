@@ -37,7 +37,7 @@ set_target_properties(libpdftoxml PROPERTIES OUTPUT_NAME "pdftoxml"
 add_library(libpdftoxmlShared SHARED ${lib_srcs})
 set_target_properties(libpdftoxmlShared PROPERTIES OUTPUT_NAME "pdftoxml"
                                                    SOVERSION 1
-												   VERSION 1.0.0
+						   VERSION 1.0.0
                                                    PUBLIC_HEADER "${lib_includes}")
 
 # pdftoxml executable
@@ -47,7 +47,7 @@ set(pdftoxml_SOURCES ${common_srcs}
 
 add_executable(pdftoxml ${pdftoxml_SOURCES})
 
-target_link_libraries(pdftoxml LINK_PUBLIC libpdftoxml ${GLIB2_LIBRARIES} ${LIBXML2_LIBRARIES} ${POPPLER_LIBRARIES})
+target_link_libraries(pdftoxml LINK_PUBLIC libpdftoxml ${GLIB2_LIBRARIES} ${LIBXML2_LIBRARIES} ${POPPLER_LIBRARIES} ${PNG_LIBRARIES})
 
 install(TARGETS pdftoxml libpdftoxml libpdftoxmlShared
   RUNTIME DESTINATION bin

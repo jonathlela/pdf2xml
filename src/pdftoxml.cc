@@ -19,10 +19,9 @@
 #include <string.h>
 #include "parseargs.h"
 #include "goo/GooString.h"
-#include "glib/gmem.h"
+#include "glib.h"
 #include "GlobalParams.h"
 #include "Object.h"
-#include "Stream.h"
 #include "Array.h"
 #include "Dict.h"
 #include "XRef.h"

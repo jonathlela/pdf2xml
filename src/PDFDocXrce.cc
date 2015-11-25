@@ -62,7 +62,11 @@ void PDFDocXrce::displayPages(OutputDev *out, xmlNodePtr docrootA, int firstPage
   	
 			// Annotation's objects list
     		if (objAnnot.isArray()){
+#if POPPLER_CHECK_VERSION(0,17,0)
+				an = new AnnotsXrce(this, objAnnot, docrootA, getCatalog(),ctm, pageNum);
+#else
   	  			an = new AnnotsXrce(objAnnot, docrootA, getCatalog(),ctm, pageNum);
+#endif
   	  			delete an;		
   			}
   			objAnnot.free();
