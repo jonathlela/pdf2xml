@@ -41,7 +41,7 @@ void pdftoxmlFileWithOptions(const char *filename, FILE* file, const char  *owne
 		delete ownerPW;
 	}
 
-	if (!doc->isOk) {
+	if (!doc->isOk()) {
 		if (nsURI) {
 			delete nsURI;
 		}
@@ -117,7 +117,7 @@ void pdftoxmlParserWithOptions(const char *filename, xmlParserCtxtPtr ctx, const
 		delete ownerPW;
 	}
 
-	if (!doc->isOk) {
+	if (!doc->isOk()) {
 		if (nsURI) {
 			delete nsURI;
 		}
