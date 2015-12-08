@@ -40,6 +40,16 @@ void pdftoxmlFileWithOptions(const char *filename, FILE* file, const char  *owne
 	if (ownerPW) {
 		delete ownerPW;
 	}
+
+	if (!doc->isOk) {
+		if (nsURI) {
+			delete nsURI;
+		}
+		delete doc;
+		delete parameters;
+		delete globalParams;
+		return;
+	}
 	
 	xmlOut = new XmlOutputDev(output ,fileName, doc->getCatalog(), physLayout, verbose, nsURI);
 
@@ -105,6 +115,16 @@ void pdftoxmlParserWithOptions(const char *filename, xmlParserCtxtPtr ctx, const
 	}
 	if (ownerPW) {
 		delete ownerPW;
+	}
+
+	if (!doc->isOk) {
+		if (nsURI) {
+			delete nsURI;
+		}
+		delete doc;
+		delete parameters;
+		delete globalParams;
+		return;
 	}
 	
 	xmlOut = new XmlOutputDev(ctx, fileName, doc->getCatalog(), physLayout, verbose, nsURI);
